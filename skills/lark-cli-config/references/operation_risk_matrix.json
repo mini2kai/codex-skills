@@ -1,0 +1,65 @@
+{
+  "docs_fetch": {
+    "risk": "low",
+    "requires_confirmation": false,
+    "preflight_read_required": false,
+    "post_verify_required": false,
+    "description": "读取 Feishu 文档内容"
+  },
+  "sheets_read": {
+    "risk": "low",
+    "requires_confirmation": false,
+    "preflight_read_required": false,
+    "post_verify_required": false,
+    "description": "读取 Feishu sheet 内容"
+  },
+  "docs_create": {
+    "risk": "medium",
+    "requires_confirmation": false,
+    "preflight_read_required": false,
+    "post_verify_required": true,
+    "description": "在指定 wiki node 或默认位置创建文档"
+  },
+  "docs_update_overwrite": {
+    "risk": "high",
+    "requires_confirmation": true,
+    "preflight_read_required": true,
+    "post_verify_required": true,
+    "description": "使用本地 markdown 完整覆盖目标文档正文"
+  },
+  "wiki_move": {
+    "risk": "high",
+    "requires_confirmation": true,
+    "preflight_read_required": true,
+    "post_verify_required": true,
+    "description": "移动 wiki node 或文档位置"
+  },
+  "drive_delete": {
+    "risk": "critical",
+    "requires_confirmation": true,
+    "preflight_read_required": true,
+    "post_verify_required": false,
+    "description": "删除 drive/wiki/document 资源"
+  },
+  "permission_transfer": {
+    "risk": "critical",
+    "requires_confirmation": true,
+    "preflight_read_required": true,
+    "post_verify_required": true,
+    "description": "转移文档或资源权限"
+  },
+  "permission_delete": {
+    "risk": "critical",
+    "requires_confirmation": true,
+    "preflight_read_required": true,
+    "post_verify_required": true,
+    "description": "删除文档或资源协作者权限"
+  },
+  "batch_write": {
+    "risk": "high",
+    "requires_confirmation": true,
+    "preflight_read_required": true,
+    "post_verify_required": true,
+    "description": "批量写入或批量更新 Feishu 数据"
+  }
+}

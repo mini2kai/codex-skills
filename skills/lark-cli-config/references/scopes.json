@@ -1,0 +1,45 @@
+{
+  "auth_status": [
+    "auth:user.id:read"
+  ],
+  "docs_fetch": [
+    "docs:document.content:read",
+    "wiki:node:read"
+  ],
+  "docs_create": [
+    "docx:document:create",
+    "wiki:node:create",
+    "wiki:node:read"
+  ],
+  "docs_update_overwrite": [
+    "docx:document:write_only",
+    "docs:document.content:read"
+  ],
+  "sheets_read": [
+    "sheets:spreadsheet:read",
+    "sheets:spreadsheet.meta:read"
+  ],
+  "sheets_write": [
+    "sheets:spreadsheet:write_only",
+    "sheets:spreadsheet.meta:read"
+  ],
+  "base_read": [
+    "base:app:read",
+    "base:table:read",
+    "base:record:read"
+  ],
+  "base_write": [
+    "base:app:update",
+    "base:record:create",
+    "base:record:update"
+  ],
+  "permission_change": [
+    "docs:permission.member:create",
+    "docs:permission.member:transfer"
+  ],
+  "drive_upload_download": [
+    "drive:file:upload",
+    "drive:file:download",
+    "drive:drive.metadata:readonly"
+  ]
+}
