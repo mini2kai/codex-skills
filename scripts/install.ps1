@@ -1,29 +1,4 @@
-﻿[CmdletBinding()]
-param(
-    [Parameter(Position = 0)]
-    [string]$Skill,
-
-    [string]$Repo = "mini2kai/codex-skills",
-
-    [string]$Ref = "main",
-
-    [switch]$Force,
-
-    [switch]$List
-)
-
 Set-StrictMode -Version Latest
-
-function Get-CodexUserHome {
-    $homePath = [Environment]::GetFolderPath("UserProfile")
-    if ([string]::IsNullOrWhiteSpace($homePath)) {
-        $homePath = $HOME
-    }
-    if ([string]::IsNullOrWhiteSpace($homePath)) {
-        throw "Cannot determine the current user's home directory."
-    }
-    return $homePath
-}
 
 function Test-CodexChildPath {
     param(
@@ -46,9 +21,8 @@ function Assert-CodexSkillName {
     }
 }
 
-function Get-CodexSkillsRoot {
-    $userHome = Get-CodexUserHome
-    return (Join-Path $userHome ".codex\skills")
+function Get-CodexInstallRoot {
+    return (Get-Location).ProviderPath
 }
 
 function Get-CodexLocalRepoRoot {
@@ -119,7 +93,7 @@ function Get-CodexRemoteRepoRoot {
     $url = Save-CodexRepoArchive -Repo $Repo -Ref $Ref -Destination $zipPath
     Expand-Archive -LiteralPath $zipPath -DestinationPath $extractPath -Force
 
-    $children = Get-ChildItem -LiteralPath $extractPath -Directory
+    $children = @(Get-ChildItem -LiteralPath $extractPath -Directory)
     if ($children.Count -eq 0) {
         throw "Downloaded archive from $url did not contain a repository directory."
     }
@@ -201,9 +175,9 @@ function Install-CodexSkill {
 
     Assert-CodexSkillName -Name $Skill
 
-    $skillsRoot = Get-CodexSkillsRoot
-    $dest = Join-Path $skillsRoot $Skill
-    $backupRoot = Join-Path $skillsRoot ".backup"
+    $installRoot = Get-CodexInstallRoot
+    $dest = Join-Path $installRoot $Skill
+    $backupRoot = Join-Path $installRoot ".backup"
     $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("codex-skills-" + [System.Guid]::NewGuid().ToString("N"))
 
     New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
@@ -225,11 +199,10 @@ function Install-CodexSkill {
             throw "Skill '$Skill' is invalid: SKILL.md is missing."
         }
 
-        New-Item -ItemType Directory -Path $skillsRoot -Force | Out-Null
-        $resolvedSkillsRoot = [System.IO.Path]::GetFullPath($skillsRoot)
+        $resolvedInstallRoot = [System.IO.Path]::GetFullPath($installRoot)
         $resolvedDest = [System.IO.Path]::GetFullPath($dest)
-        if (-not (Test-CodexChildPath -Parent $resolvedSkillsRoot -Child $resolvedDest)) {
-            throw "Resolved install path is outside the Codex skills directory: $resolvedDest"
+        if (-not (Test-CodexChildPath -Parent $resolvedInstallRoot -Child $resolvedDest)) {
+            throw "Resolved install path is outside the current directory: $resolvedDest"
         }
 
         if (Test-Path -LiteralPath $dest) {
@@ -246,7 +219,6 @@ function Install-CodexSkill {
 
         Copy-Item -LiteralPath $src -Destination $dest -Recurse
         Write-Host "Installed '$Skill' to $dest"
-        Write-Host "Restart Codex to load the installed skill."
     }
     finally {
         if ((Test-Path -LiteralPath $tempRoot) -and (Test-CodexChildPath -Parent ([System.IO.Path]::GetTempPath()) -Child $tempRoot)) {
@@ -255,9 +227,8 @@ function Install-CodexSkill {
     }
 }
 
-if ($MyInvocation.InvocationName -ne ".") {
-    if ($PSBoundParameters.Count -gt 0 -or $args.Count -gt 0) {
-        Install-CodexSkill @PSBoundParameters
+if ($MyInvocation.InvocationName -ne "." -and $MyInvocation.Line -notmatch "\|\s*iex|Invoke-Expression") {
+    if ($args.Count -gt 0) {
+        Install-CodexSkill @args
     }
 }
-
