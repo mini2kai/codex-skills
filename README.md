@@ -1,8 +1,83 @@
 ﻿# Codex Skills
 
-This repository is a collection of Codex skills. Each subdirectory under `skills/` is a complete standalone skill that can be installed into the current user's Codex skills directory.
+这是一个 Codex skills 集合仓库。仓库里的每个 `skills/<skill-name>/` 子目录都是一个完整、可独立安装的 skill。
 
-## Repository Layout
+当前已包含：
+
+- `lark-cli-config`：用于 Feishu/Lark 文档、wiki、sheet、drive 和 `lark-cli` 操作前的环境检查、授权引导、scope 修复和高风险操作确认。
+
+## 快速安装
+
+### Windows PowerShell 推荐方式
+
+可以在任意目录执行，不需要进入本仓库目录：
+
+```powershell
+Invoke-WebRequest https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 -OutFile install.ps1
+powershell -ExecutionPolicy Bypass -File .\install.ps1 lark-cli-config
+```
+
+安装完成后，重启 Codex，让新 skill 生效。
+
+### 一行命令方式
+
+这种方式更方便，但会直接执行远程脚本。团队内默认更推荐上面的两步安装方式。
+
+```powershell
+iwr https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 -UseB | iex; Install-CodexSkill lark-cli-config
+```
+
+### Codex 官方 skill-installer 方式
+
+```powershell
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/lark-cli-config
+```
+
+## 安装位置
+
+安装脚本会自动识别当前用户目录，并安装到：
+
+```text
+$HOME\.codex\skills\<skill-name>
+```
+
+脚本不依赖执行命令时所在的目录，也不会写死任何使用者的本机路径。
+
+## 常用命令
+
+列出仓库里的 skill：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -List
+```
+
+指定分支或 tag 安装：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 lark-cli-config -Ref v1.0.0
+```
+
+如果本地已经存在同名 skill，默认会停止，不会覆盖。确认要替换时使用 `-Force`：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 lark-cli-config -Force
+```
+
+覆盖前会自动备份旧版本到：
+
+```text
+$HOME\.codex\skills\.backup\<skill-name>-yyyyMMdd-HHmmss
+```
+
+## 本地仓库安装
+
+如果已经 clone 了这个仓库，也可以从仓库根目录执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 lark-cli-config
+```
+
+## 仓库结构
 
 ```text
 codex-skills/
@@ -18,89 +93,22 @@ codex-skills/
 └── README.md
 ```
 
-## Install With PowerShell
+## install.ps1 的行为
 
-Recommended two-step install:
+`scripts/install.ps1` 的设计规则：
 
-```powershell
-Invoke-WebRequest https://raw.githubusercontent.com/lzsj/codex-skills/main/scripts/install.ps1 -OutFile install.ps1
-powershell -ExecutionPolicy Bypass -File .\install.ps1 lark-cli-config
-```
+- 支持 `Skill`、`Repo`、`Ref`、`Force`、`List` 参数。
+- 使用当前用户的 `$HOME` 动态计算安装目录。
+- 从本地仓库执行时，优先复制本地 `skills/<skill-name>`。
+- 单独下载脚本或远程执行脚本时，会下载 GitHub 仓库 zip，再复制 `skills/<skill-name>`。
+- 默认不覆盖已有 skill。
+- 使用 `-Force` 时，会先备份旧 skill，再复制新 skill。
+- 安装前校验目标路径必须位于 `$HOME\.codex\skills` 下。
+- 只复制文件，不执行 skill 内部脚本。
 
-The command can be run from any directory. It installs to the current user's Codex skills directory:
+## 添加新 skill
 
-```text
-$HOME\.codex\skills\<skill-name>
-```
-
-It never depends on the directory where the command is executed.
-
-## Install From A Local Clone
-
-From this repository:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 lark-cli-config
-```
-
-List available skills:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -List
-```
-
-Install from a tag or branch:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 lark-cli-config -Ref v1.0.0
-```
-
-Replace an existing skill and keep a backup:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 lark-cli-config -Force
-```
-
-Backups are written under:
-
-```text
-$HOME\.codex\skills\.backup\<skill-name>-yyyyMMdd-HHmmss
-```
-
-## Optional One-Line Install
-
-This style is convenient, but review the script first before using it in a team environment.
-
-```powershell
-iwr https://raw.githubusercontent.com/lzsj/codex-skills/main/scripts/install.ps1 -UseB | iex; Install-CodexSkill lark-cli-config
-```
-
-## Official Codex Installer
-
-You can also install a skill with Codex's built-in skill installer:
-
-```powershell
-python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo lzsj/codex-skills --path skills/lark-cli-config
-```
-
-Restart Codex after installation so the new skill is loaded.
-
-## PowerShell Installer Behavior
-
-`scripts/install.ps1` follows these rules:
-
-- Accepts `Skill`, `Repo`, `Ref`, `Force`, and `List` parameters.
-- Uses the current user's home directory dynamically; no machine-specific user path is hard-coded.
-- If run from a local clone, installs from local `skills/<skill-name>`.
-- If run as a standalone downloaded script, downloads the GitHub repository zip and installs from `skills/<skill-name>`.
-- Refuses to overwrite an existing skill by default.
-- With `-Force`, moves the existing skill to `.backup` before copying the new one.
-- Validates that the resolved destination stays inside `$HOME\.codex\skills`.
-- Copies files only; it does not execute scripts inside the installed skill.
-
-## Add A Skill
-
-Each skill directory should be complete by itself:
+每个 skill 目录应该是完整结构：
 
 ```text
 skills/<skill-name>/
@@ -110,4 +118,4 @@ skills/<skill-name>/
 └── scripts/
 ```
 
-Keep the directory name and the `name` field in `SKILL.md` aligned.
+建议目录名、安装名和 `SKILL.md` frontmatter 里的 `name` 保持一致。

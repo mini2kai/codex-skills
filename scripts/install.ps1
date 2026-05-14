@@ -3,7 +3,7 @@ param(
     [Parameter(Position = 0)]
     [string]$Skill,
 
-    [string]$Repo = "lzsj/codex-skills",
+    [string]$Repo = "mini2kai/codex-skills",
 
     [string]$Ref = "main",
 
@@ -141,7 +141,7 @@ function Get-CodexSkillManifest {
 function Show-CodexSkillList {
     [CmdletBinding()]
     param(
-        [string]$Repo = "lzsj/codex-skills",
+        [string]$Repo = "mini2kai/codex-skills",
         [string]$Ref = "main"
     )
 
@@ -181,7 +181,7 @@ function Install-CodexSkill {
         [Parameter(Position = 0)]
         [string]$Skill,
 
-        [string]$Repo = "lzsj/codex-skills",
+        [string]$Repo = "mini2kai/codex-skills",
 
         [string]$Ref = "main",
 
@@ -260,3 +260,4 @@ if ($MyInvocation.InvocationName -ne ".") {
         Install-CodexSkill @PSBoundParameters
     }
 }
+
