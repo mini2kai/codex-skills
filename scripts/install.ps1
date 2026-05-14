@@ -17,7 +17,7 @@ function Assert-CodexSkillName {
     param([Parameter(Mandatory = $true)][string]$Name)
 
     if ($Name -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
-        throw "Invalid skill name '$Name'. Use only letters, numbers, dot, underscore, and hyphen."
+        throw "Skill 名称不合法：$Name。只能使用英文字母、数字、点、下划线和连字符。"
     }
 }
 
@@ -77,7 +77,7 @@ function Save-CodexRepoArchive {
         }
     }
 
-    throw "Failed to download repository archive for $Repo@$Ref.`n$($errors -join "`n")"
+    throw "下载仓库失败：$Repo@$Ref。请检查网络、仓库地址或分支/tag 是否存在。`n$($errors -join "`n")"
 }
 
 function Get-CodexRemoteRepoRoot {
@@ -95,7 +95,7 @@ function Get-CodexRemoteRepoRoot {
 
     $children = @(Get-ChildItem -LiteralPath $extractPath -Directory)
     if ($children.Count -eq 0) {
-        throw "Downloaded archive from $url did not contain a repository directory."
+        throw "下载的仓库压缩包无效：$url 中没有仓库目录。"
     }
 
     return $children[0].FullName
@@ -164,71 +164,82 @@ function Install-CodexSkill {
         [switch]$List
     )
 
-    if ($List) {
-        Show-CodexSkillList -Repo $Repo -Ref $Ref
-        return
-    }
-
-    if ([string]::IsNullOrWhiteSpace($Skill)) {
-        throw "Usage: Install-CodexSkill <skill-name> [-Repo owner/repo] [-Ref main|tag] [-Force] [-List]"
-    }
-
-    Assert-CodexSkillName -Name $Skill
-
-    $installRoot = Get-CodexInstallRoot
-    $dest = Join-Path $installRoot $Skill
-    $backupRoot = Join-Path $installRoot ".backup"
-    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("codex-skills-" + [System.Guid]::NewGuid().ToString("N"))
-
-    New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
-
     try {
-        $repoRoot = Get-CodexLocalRepoRoot
-        if ($null -eq $repoRoot -or -not (Test-Path -LiteralPath (Join-Path $repoRoot "skills\$Skill") -PathType Container)) {
-            Write-Host "Downloading $Repo@$Ref..."
-            $repoRoot = Get-CodexRemoteRepoRoot -Repo $Repo -Ref $Ref -WorkDir $tempRoot
+        if ($List) {
+            Show-CodexSkillList -Repo $Repo -Ref $Ref
+            return
         }
 
-        $src = Join-Path $repoRoot "skills\$Skill"
-        if (-not (Test-Path -LiteralPath $src -PathType Container)) {
-            throw "Skill '$Skill' was not found at skills/$Skill in $Repo@$Ref. Use -List to view available skills."
+        if ([string]::IsNullOrWhiteSpace($Skill)) {
+            throw "缺少 Skill 名称。用法：Install-CodexSkill <skill-name> [-Repo owner/repo] [-Ref main|tag] [-Force] [-List]"
         }
 
-        $skillFile = Join-Path $src "SKILL.md"
-        if (-not (Test-Path -LiteralPath $skillFile -PathType Leaf)) {
-            throw "Skill '$Skill' is invalid: SKILL.md is missing."
-        }
+        Assert-CodexSkillName -Name $Skill
+
+        $installRoot = Get-CodexInstallRoot
+        $dest = Join-Path $installRoot $Skill
+        $backupRoot = Join-Path $installRoot ".backup"
 
         $resolvedInstallRoot = [System.IO.Path]::GetFullPath($installRoot)
         $resolvedDest = [System.IO.Path]::GetFullPath($dest)
         if (-not (Test-CodexChildPath -Parent $resolvedInstallRoot -Child $resolvedDest)) {
-            throw "Resolved install path is outside the current directory: $resolvedDest"
+            throw "安装路径异常：$resolvedDest 不在当前执行目录 $resolvedInstallRoot 下。"
         }
 
-        if (Test-Path -LiteralPath $dest) {
-            if (-not $Force) {
-                throw "Skill '$Skill' already exists at $dest. Re-run with -Force to replace it and create a backup."
+        if ((Test-Path -LiteralPath $dest) -and -not $Force) {
+            Write-Host "skill 已存在，未覆盖：$dest" -ForegroundColor Yellow
+            Write-Host "如需覆盖安装，请在当前目录执行：" -ForegroundColor Yellow
+            Write-Host "irm https://raw.githubusercontent.com/$Repo/$Ref/scripts/install.ps1 | iex; Install-CodexSkill $Skill -Force" -ForegroundColor Yellow
+            return
+        }
+
+        $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("codex-skills-" + [System.Guid]::NewGuid().ToString("N"))
+        New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
+
+        try {
+            $repoRoot = Get-CodexLocalRepoRoot
+            if ($null -eq $repoRoot -or -not (Test-Path -LiteralPath (Join-Path $repoRoot "skills\$Skill") -PathType Container)) {
+                Write-Host "正在下载 $Repo@$Ref ..."
+                $repoRoot = Get-CodexRemoteRepoRoot -Repo $Repo -Ref $Ref -WorkDir $tempRoot
             }
 
-            New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
-            $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-            $backupDest = Join-Path $backupRoot "$Skill-$timestamp"
-            Move-Item -LiteralPath $dest -Destination $backupDest
-            Write-Host "Existing skill backed up to $backupDest"
-        }
+            $src = Join-Path $repoRoot "skills\$Skill"
+            if (-not (Test-Path -LiteralPath $src -PathType Container)) {
+                throw "未找到 skill：$Skill。仓库 $Repo@$Ref 中不存在 skills/$Skill。可以使用 -List 查看可安装的 skill。"
+            }
 
-        Copy-Item -LiteralPath $src -Destination $dest -Recurse
-        Write-Host "Installed '$Skill' to $dest"
-    }
-    finally {
-        if ((Test-Path -LiteralPath $tempRoot) -and (Test-CodexChildPath -Parent ([System.IO.Path]::GetTempPath()) -Child $tempRoot)) {
-            Remove-Item -LiteralPath $tempRoot -Recurse -Force
+            $skillFile = Join-Path $src "SKILL.md"
+            if (-not (Test-Path -LiteralPath $skillFile -PathType Leaf)) {
+                throw "skill 无效：$Skill 缺少 SKILL.md。"
+            }
+
+            if (Test-Path -LiteralPath $dest) {
+                New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+                $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+                $backupDest = Join-Path $backupRoot "$Skill-$timestamp"
+                Move-Item -LiteralPath $dest -Destination $backupDest
+                Write-Host "已备份旧 skill 到：$backupDest"
+            }
+
+            Copy-Item -LiteralPath $src -Destination $dest -Recurse
+            Write-Host "安装完成：$dest" -ForegroundColor Green
         }
+        finally {
+            if ((Test-Path -LiteralPath $tempRoot) -and (Test-CodexChildPath -Parent ([System.IO.Path]::GetTempPath()) -Child $tempRoot)) {
+                Remove-Item -LiteralPath $tempRoot -Recurse -Force
+            }
+        }
+    }
+    catch {
+        Write-Host "安装失败：$($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
-if ($MyInvocation.InvocationName -ne "." -and $MyInvocation.Line -notmatch "\|\s*iex|Invoke-Expression") {
+if (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
     if ($args.Count -gt 0) {
         Install-CodexSkill @args
+    }
+    else {
+        Write-Host "用法：powershell -ExecutionPolicy Bypass -File .\install.ps1 <skill-name> [-Force] [-List]"
     }
 }

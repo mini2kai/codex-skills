@@ -67,10 +67,10 @@ python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-gi
 
 也就是说，使用者在哪个目录下运行安装命令，就会把 skill 复制到哪个目录下。
 
-如果目标目录已经存在同名 skill，默认会停止，不会覆盖。确认要替换时使用 `-Force`：
+如果目标目录已经存在同名 skill，默认会显示中文提示并停止，不会覆盖。确认要替换时使用 `-Force`：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1 lark-cli-config -Force
+irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill lark-cli-config -Force
 ```
 
 覆盖前会自动备份旧版本到当前目录下的 `.backup`：
