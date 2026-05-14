@@ -19,6 +19,22 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1 lark-cli-config
 
 安装完成后，重启 Codex，让新 skill 生效。
 
+
+### GitHub Raw 一行安装
+
+如果只想给别人一个最短的 GitHub 安装入口，可以使用这个命令：
+
+```powershell
+irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install-lark-cli-config.ps1 | iex
+```
+
+这个快捷脚本内部会先加载通用安装器 `scripts/install.ps1`，再自动执行：
+
+```powershell
+Install-CodexSkill lark-cli-config
+```
+
+所以使用者不需要再手动输入 skill 名。
 ### 一行命令方式
 
 这种方式更方便，但会直接执行远程脚本。团队内默认更推荐上面的两步安装方式。
@@ -119,3 +135,4 @@ skills/<skill-name>/
 ```
 
 建议目录名、安装名和 `SKILL.md` frontmatter 里的 `name` 保持一致。
+
