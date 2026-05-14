@@ -200,7 +200,7 @@ function Install-CodexSkill {
         if ([string]::IsNullOrWhiteSpace($Skill)) {
             Write-Host "缺少 Skill 名称。" -ForegroundColor Yellow
             Write-CodexSuggestion "查询可安装 skill：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill -List"
-            Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill lark-cli-config"
+            Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill postgres-query"
             return
         }
 
@@ -265,7 +265,7 @@ function Install-CodexSkill {
     catch {
         Write-Host "安装失败：$($_.Exception.Message)" -ForegroundColor Red
         Write-CodexSuggestion "查询可安装 skill：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill -List"
-        Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill lark-cli-config"
+        Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill postgres-query"
     }
 }
 
@@ -276,6 +276,6 @@ if (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
     else {
         Write-Host "缺少参数。" -ForegroundColor Yellow
         Write-CodexSuggestion "查询可安装 skill：$(Get-CodexInstallerCommand); Install-CodexSkill -List"
-        Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand); Install-CodexSkill lark-cli-config"
+        Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand); Install-CodexSkill postgres-query"
     }
 }

@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "codex-skills",
   "version": "1.0.0",
   "skills": {
@@ -7,6 +7,12 @@
       "description": "分步引导 lark-cli 授权配置，封装 Feishu document/wiki/sheet 安全操作。",
       "tags": ["feishu", "lark-cli", "auth", "docs"],
       "requires": ["node", "npx", "@larksuite/cli"]
+    },
+    "postgres-query": {
+      "path": "skills/postgres-query",
+      "description": "引导式 PostgreSQL 临时连接配置、只读查询、表结构查看和查询计划分析；风险操作只生成 SQL 不执行。",
+      "tags": ["postgresql", "pgsql", "database", "query", "readonly", "schema", "explain"],
+      "requires": ["python", "psycopg or psycopg2"]
     }
   }
 }
