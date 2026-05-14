@@ -1,5 +1,23 @@
 Set-StrictMode -Version Latest
 
+$script:CodexSkillsDefaultRepo = "mini2kai/codex-skills"
+$script:CodexSkillsDefaultRef = "main"
+
+function Get-CodexInstallerCommand {
+    param(
+        [string]$Repo = $script:CodexSkillsDefaultRepo,
+        [string]$Ref = $script:CodexSkillsDefaultRef
+    )
+
+    return "irm https://raw.githubusercontent.com/$Repo/$Ref/scripts/install.ps1 | iex"
+}
+
+function Write-CodexSuggestion {
+    param([Parameter(Mandatory = $true)][string]$Message)
+
+    Write-Host $Message -ForegroundColor Cyan
+}
+
 function Test-CodexChildPath {
     param(
         [Parameter(Mandatory = $true)][string]$Parent,
@@ -77,7 +95,7 @@ function Save-CodexRepoArchive {
         }
     }
 
-    throw "下载仓库失败：$Repo@$Ref。请检查网络、仓库地址或分支/tag 是否存在。`n$($errors -join "`n")"
+    throw "下载仓库失败：$Repo@$Ref。请检查网络、仓库地址、分支或 tag 是否存在。`n$($errors -join "`n")"
 }
 
 function Get-CodexRemoteRepoRoot {
@@ -115,8 +133,8 @@ function Get-CodexSkillManifest {
 function Show-CodexSkillList {
     [CmdletBinding()]
     param(
-        [string]$Repo = "mini2kai/codex-skills",
-        [string]$Ref = "main"
+        [string]$Repo = $script:CodexSkillsDefaultRepo,
+        [string]$Ref = $script:CodexSkillsDefaultRef
     )
 
     $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("codex-skills-" + [System.Guid]::NewGuid().ToString("N"))
@@ -125,12 +143,17 @@ function Show-CodexSkillList {
     try {
         $repoRoot = Get-CodexLocalRepoRoot
         if ($null -eq $repoRoot) {
+            Write-Host "正在读取 skill 列表：$Repo@$Ref ..."
             $repoRoot = Get-CodexRemoteRepoRoot -Repo $Repo -Ref $Ref -WorkDir $tempRoot
         }
 
         $manifest = Get-CodexSkillManifest -RepoRoot $repoRoot
+        Write-Host "可安装的 skill：" -ForegroundColor Green
+
         if ($null -eq $manifest -or $null -eq $manifest.skills) {
-            Get-ChildItem -LiteralPath (Join-Path $repoRoot "skills") -Directory | ForEach-Object { $_.Name }
+            Get-ChildItem -LiteralPath (Join-Path $repoRoot "skills") -Directory | ForEach-Object {
+                Write-Host "- $($_.Name)"
+            }
             return
         }
 
@@ -139,8 +162,12 @@ function Show-CodexSkillList {
             if ($null -ne $_.Value.description) {
                 $description = $_.Value.description
             }
-            "{0}`t{1}" -f $_.Name, $description
+            Write-Host ("- {0}：{1}" -f $_.Name, $description)
         }
+    }
+    catch {
+        Write-Host "查询失败：$($_.Exception.Message)" -ForegroundColor Red
+        Write-CodexSuggestion "建议确认网络可访问 GitHub，或指定正确仓库：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill -List -Repo owner/repo -Ref main"
     }
     finally {
         if ((Test-Path -LiteralPath $tempRoot) -and (Test-CodexChildPath -Parent ([System.IO.Path]::GetTempPath()) -Child $tempRoot)) {
@@ -155,9 +182,9 @@ function Install-CodexSkill {
         [Parameter(Position = 0)]
         [string]$Skill,
 
-        [string]$Repo = "mini2kai/codex-skills",
+        [string]$Repo = $script:CodexSkillsDefaultRepo,
 
-        [string]$Ref = "main",
+        [string]$Ref = $script:CodexSkillsDefaultRef,
 
         [switch]$Force,
 
@@ -171,7 +198,10 @@ function Install-CodexSkill {
         }
 
         if ([string]::IsNullOrWhiteSpace($Skill)) {
-            throw "缺少 Skill 名称。用法：Install-CodexSkill <skill-name> [-Repo owner/repo] [-Ref main|tag] [-Force] [-List]"
+            Write-Host "缺少 Skill 名称。" -ForegroundColor Yellow
+            Write-CodexSuggestion "查询可安装 skill：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill -List"
+            Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill lark-cli-config"
+            return
         }
 
         Assert-CodexSkillName -Name $Skill
@@ -188,8 +218,8 @@ function Install-CodexSkill {
 
         if ((Test-Path -LiteralPath $dest) -and -not $Force) {
             Write-Host "skill 已存在，未覆盖：$dest" -ForegroundColor Yellow
-            Write-Host "如需覆盖安装，请在当前目录执行：" -ForegroundColor Yellow
-            Write-Host "irm https://raw.githubusercontent.com/$Repo/$Ref/scripts/install.ps1 | iex; Install-CodexSkill $Skill -Force" -ForegroundColor Yellow
+            Write-CodexSuggestion "覆盖安装：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill $Skill -Force"
+            Write-CodexSuggestion "换目录安装：cd <目标目录> 后重新执行安装命令。"
             return
         }
 
@@ -205,7 +235,9 @@ function Install-CodexSkill {
 
             $src = Join-Path $repoRoot "skills\$Skill"
             if (-not (Test-Path -LiteralPath $src -PathType Container)) {
-                throw "未找到 skill：$Skill。仓库 $Repo@$Ref 中不存在 skills/$Skill。可以使用 -List 查看可安装的 skill。"
+                Write-Host "未找到 skill：$Skill。仓库 $Repo@$Ref 中不存在 skills/$Skill。" -ForegroundColor Yellow
+                Write-CodexSuggestion "查询可安装 skill：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill -List"
+                return
             }
 
             $skillFile = Join-Path $src "SKILL.md"
@@ -232,6 +264,8 @@ function Install-CodexSkill {
     }
     catch {
         Write-Host "安装失败：$($_.Exception.Message)" -ForegroundColor Red
+        Write-CodexSuggestion "查询可安装 skill：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill -List"
+        Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill lark-cli-config"
     }
 }
 
@@ -240,6 +274,8 @@ if (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
         Install-CodexSkill @args
     }
     else {
-        Write-Host "用法：powershell -ExecutionPolicy Bypass -File .\install.ps1 <skill-name> [-Force] [-List]"
+        Write-Host "缺少参数。" -ForegroundColor Yellow
+        Write-CodexSuggestion "查询可安装 skill：$(Get-CodexInstallerCommand); Install-CodexSkill -List"
+        Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand); Install-CodexSkill lark-cli-config"
     }
 }
