@@ -127,7 +127,8 @@ function Get-CodexSkillManifest {
         return $null
     }
 
-    return Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    $manifestText = [System.IO.File]::ReadAllText($manifestPath, [System.Text.Encoding]::UTF8)
+    return $manifestText | ConvertFrom-Json
 }
 
 function Show-CodexSkillList {
