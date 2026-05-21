@@ -33,14 +33,16 @@ Unable to create .git/index.lock: Permission denied
 
 ## 提交
 
+提交信息必须使用中文，并简要写清楚修改内容。
+
 ```powershell
-git commit -m "Add <skill-name> skill"
+git commit -m "新增 <skill-name> skill"
 ```
 
 更新已有 skill：
 
 ```powershell
-git commit -m "Update <skill-name> skill"
+git commit -m "更新 <skill-name> skill 指引"
 ```
 
 ## 推送

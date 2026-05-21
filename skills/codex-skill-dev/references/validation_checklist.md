@@ -2,10 +2,12 @@
 
 开发或更新 skill 后按顺序执行。
 
+下面命令里的 `<repo-root>` 指正在开发的 skills 仓库根目录。`skill_preflight.py` 和 `validate_skill_repo.py` 来自当前 `codex-skill-dev` skill 自身的 `scripts/` 目录，不要求目标仓库也安装 `codex-skill-dev`。
+
 ## 基础校验
 
 ```powershell
-python C:\Users\lzsj\.codex\skills\.system\skill-creator\scripts\quick_validate.py C:\Users\lzsj\all\codex-skills\skills\<skill-name>
+python $HOME\.codex\skills\.system\skill-creator\scripts\quick_validate.py <repo-root>\skills\<skill-name>
 ```
 
 期望：
@@ -17,7 +19,7 @@ Skill is valid!
 ## manifest 校验
 
 ```powershell
-python -m json.tool C:\Users\lzsj\all\codex-skills\manifest.json
+python -m json.tool <repo-root>\manifest.json
 ```
 
 如果出现 `Unexpected UTF-8 BOM`，先转无 BOM UTF-8。
@@ -33,13 +35,13 @@ python -m py_compile <script1.py> <script2.py>
 ## skill 预检脚本
 
 ```powershell
-python skills\codex-skill-dev\scripts\skill_preflight.py --repo-root . --skill <skill-name>
+python .\scripts\skill_preflight.py --repo-root <repo-root> --skill <skill-name>
 ```
 
 ## 仓库级校验脚本
 
 ```powershell
-python skills\codex-skill-dev\scripts\validate_skill_repo.py --repo-root . --skill <skill-name>
+python .\scripts\validate_skill_repo.py --repo-root <repo-root> --skill <skill-name>
 ```
 
 ## 行为测试

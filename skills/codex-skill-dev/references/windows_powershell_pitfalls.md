@@ -36,7 +36,7 @@ $text = [System.IO.File]::ReadAllText($path)
 
 ## 防止 `$skill-name` 被展开
 
-PowerShell 双引号和部分命令会把 `$postgres-query` 识别成变量，可能变成 `-query`。
+PowerShell 双引号和部分命令会把 `$skill-name` 识别成变量，可能变成 `-name`。
 
 处理方式：
 

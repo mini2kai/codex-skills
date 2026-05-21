@@ -45,10 +45,10 @@ python -m json.tool manifest.json
 现象：
 
 ```yaml
-default_prompt: "Use -query ..."
+default_prompt: "Use -name ..."
 ```
 
-原因：`$postgres-query` 被当作变量展开。
+原因：`$skill-name` 被当作变量展开。
 
 处理：用单引号 here-string 写入，写完检查 `openai.yaml`。
 

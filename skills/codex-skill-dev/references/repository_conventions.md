@@ -60,9 +60,9 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 origin main
 ```
 
-提交信息使用英文动词短句，例如：
+提交信息必须使用中文，简要写清楚修改内容，例如：
 
 ```text
-Add codex skill development workflow
-Update postgres query skill guidance
+新增 codex skill 开发流程
+更新 postgres query 使用指引
 ```
