@@ -52,7 +52,7 @@
     },
     "server-docker-logs-readonly": {
       "path": "skills/server-docker-logs-readonly",
-      "description": "本地脚本白名单模式查询 Docker 容器内服务日志文件；脚本随 skill 下载，真实服务器配置只保留在本地 custom_script。",
+      "description": "本地脚本白名单模式查询 Docker 容器内指定日志目录下的文件；配置文件随 skill 一起下载。",
       "tags": [
         "server",
         "docker",
@@ -66,7 +66,7 @@
         "powershell",
         "python",
         "paramiko",
-        "local custom_script/server-docker-logs-readonly/targets.local.json"
+        "edit skills/server-docker-logs-readonly/scripts/targets.local.json"
       ]
     }
   }

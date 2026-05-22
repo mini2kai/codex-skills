@@ -14,9 +14,7 @@
       "containers": {
         "example-backend": {
           "description": "示例后端服务容器",
-          "logDir": "logs",
-          "logFilePrefix": "MODULE_INSTANCE.log",
-          "defaultLogFile": "MODULE_INSTANCE.log"
+          "logDir": "logs"
         }
       }
     }

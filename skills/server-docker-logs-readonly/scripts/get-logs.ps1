@@ -8,7 +8,6 @@ param(
 Assert-Tail -Tail $Tail
 $targetConfig = Get-TargetConfig -Target $Target
 $containerConfig = Get-ContainerConfig -TargetConfig $targetConfig -Container $Container
-if ([string]::IsNullOrWhiteSpace($File)) { $File = $containerConfig.defaultLogFile }
-$remote = New-TailLogFileCommand -Container $Container -LogDir $containerConfig.logDir -File $File -Tail $Tail -LogFilePrefix $containerConfig.logFilePrefix
+$remote = New-TailLogFileCommand -Container $Container -LogDir $containerConfig.logDir -File $File -Tail $Tail
 $result = Invoke-TargetDockerRead -TargetConfig $targetConfig -RemoteCommand $remote
 Write-Json @{ ok = ($result.exit_code -eq 0); target = $Target; container = $Container; log_dir = $containerConfig.logDir; file = $File; tail = $Tail; exit_code = $result.exit_code; stdout = $result.output; error = if ($result.exit_code -eq 0) { $null } else { 'script_command_failed' } }

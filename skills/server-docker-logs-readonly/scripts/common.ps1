@@ -10,18 +10,14 @@ function Write-Json {
     exit $ExitCode
 }
 
-function Get-RepoRoot {
-    return (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
-}
-
 function Get-LocalConfigPath {
-    Join-Path (Get-RepoRoot) 'custom_script\server-docker-logs-readonly\targets.local.json'
+    Join-Path $PSScriptRoot 'targets.local.json'
 }
 
 function Get-LocalConfig {
     $path = Get-LocalConfigPath
     if (-not (Test-Path -LiteralPath $path)) {
-        Write-Json @{ ok = $false; error = 'config_missing'; message = '缺少本地配置：custom_script/server-docker-logs-readonly/targets.local.json'; next_action = '请按 skill 内 scripts/targets.local.json 的格式，在 custom_script/server-docker-logs-readonly/ 下创建本地 targets.local.json，并确认它不提交到 Git。' } 2
+        Write-Json @{ ok = $false; error = 'config_missing'; message = '缺少 skill 内置配置：scripts/targets.local.json'; next_action = '请在当前 skill 的 scripts/targets.local.json 中配置目标、SSH 信息、容器和 logDir。' } 2
     }
     try {
         return Get-Content -Raw -LiteralPath $path | ConvertFrom-Json
@@ -53,15 +49,19 @@ function Assert-SafePath {
 
 function Assert-SafeLogFile {
     param(
-        [Parameter(Mandatory = $true)] [string] $File,
-        [string] $LogFilePrefix = ''
+        [Parameter(Mandatory = $true)] [string] $File
     )
     if ($File -notmatch '^[A-Za-z0-9_.-]{1,256}$' -or $File.StartsWith('-')) {
         Write-Json @{ ok = $false; error = 'invalid_parameter'; field = 'File'; message = 'File 必须是简单日志文件名，不能包含路径分隔符或 shell 特殊字符。' } 4
     }
-    if (-not [string]::IsNullOrWhiteSpace($LogFilePrefix) -and -not $File.StartsWith($LogFilePrefix, [StringComparison]::Ordinal)) {
-        Write-Json @{ ok = $false; error = 'log_file_not_allowed'; file = $File; message = 'File 不匹配本地配置允许的日志文件前缀。' } 4
+}
+
+function Assert-RequiredLogFile {
+    param([string] $File)
+    if ([string]::IsNullOrWhiteSpace($File)) {
+        Write-Json @{ ok = $false; error = 'file_required'; field = 'File'; message = '必须指定 File。请先运行 list-log-files.ps1 查看 logDir 下的文件名。' } 4
     }
+    Assert-SafeLogFile -File $File
 }
 
 function Assert-Tail {
@@ -97,8 +97,6 @@ function Get-ContainerConfig {
     Assert-SafeName -Name $Container -Field 'Container'
     $default = [pscustomobject]@{
         logDir = 'logs'
-        logFilePrefix = 'MODULE_INSTANCE.log'
-        defaultLogFile = 'MODULE_INSTANCE.log'
         description = ''
     }
     if (-not $TargetConfig.PSObject.Properties.Name.Contains('containers') -or $null -eq $TargetConfig.containers) {
@@ -114,15 +112,9 @@ function Get-ContainerConfig {
     if ($containers.PSObject.Properties.Name.Contains($Container)) {
         $entry = $containers.$Container
         $logDir = if ($entry.PSObject.Properties.Name.Contains('logDir') -and $entry.logDir) { [string]$entry.logDir } else { 'logs' }
-        $prefix = if ($entry.PSObject.Properties.Name.Contains('logFilePrefix') -and $entry.logFilePrefix) { [string]$entry.logFilePrefix } else { 'MODULE_INSTANCE.log' }
-        $defaultFile = if ($entry.PSObject.Properties.Name.Contains('defaultLogFile') -and $entry.defaultLogFile) { [string]$entry.defaultLogFile } else { $prefix }
         Assert-SafePath -PathValue $logDir -Field 'logDir'
-        Assert-SafeLogFile -File $prefix
-        Assert-SafeLogFile -File $defaultFile -LogFilePrefix $prefix
         return [pscustomobject]@{
             logDir = $logDir
-            logFilePrefix = $prefix
-            defaultLogFile = $defaultFile
             description = if ($entry.PSObject.Properties.Name.Contains('description')) { [string]$entry.description } else { '' }
         }
     }
@@ -224,26 +216,25 @@ function New-DockerExecShellCommand {
 }
 
 function New-ListLogFilesCommand {
-    param([string] $Container, [string] $LogDir, [string] $LogFilePrefix)
+    param([string] $Container, [string] $LogDir)
     Assert-SafePath -PathValue $LogDir -Field 'logDir'
-    Assert-SafeLogFile -File $LogFilePrefix
-    $inner = "cd -- $LogDir && ls -1 -- $LogFilePrefix* 2>/dev/null || true"
+    $inner = "cd -- $LogDir && find . -maxdepth 1 -type f -exec basename {} \; 2>/dev/null | sort || true"
     return New-DockerExecShellCommand -Container $Container -InnerCommand $inner
 }
 
 function New-TailLogFileCommand {
-    param([string] $Container, [string] $LogDir, [string] $File, [int] $Tail, [string] $LogFilePrefix)
+    param([string] $Container, [string] $LogDir, [string] $File, [int] $Tail)
     Assert-SafePath -PathValue $LogDir -Field 'logDir'
-    Assert-SafeLogFile -File $File -LogFilePrefix $LogFilePrefix
+    Assert-RequiredLogFile -File $File
     Assert-Tail -Tail $Tail
     $inner = "cd -- $LogDir && tail -n $Tail -- $File 2>&1"
     return New-DockerExecShellCommand -Container $Container -InnerCommand $inner
 }
 
 function New-SearchLogFileCommand {
-    param([string] $Container, [string] $LogDir, [string] $File, [string] $Keyword, [int] $MaxMatches, [string] $LogFilePrefix)
+    param([string] $Container, [string] $LogDir, [string] $File, [string] $Keyword, [int] $MaxMatches)
     Assert-SafePath -PathValue $LogDir -Field 'logDir'
-    Assert-SafeLogFile -File $File -LogFilePrefix $LogFilePrefix
+    Assert-RequiredLogFile -File $File
     Assert-MaxMatches -MaxMatches $MaxMatches
     if ([string]::IsNullOrWhiteSpace($Keyword) -or $Keyword.Length -gt 200) {
         Write-Json @{ ok = $false; error = 'invalid_parameter'; field = 'Keyword'; message = 'Keyword 为必填项，且长度不能超过 200 个字符。' } 4
@@ -254,9 +245,9 @@ function New-SearchLogFileCommand {
 }
 
 function New-RecentErrorsCommand {
-    param([string] $Container, [string] $LogDir, [string] $File, [int] $MaxMatches, [string] $LogFilePrefix)
+    param([string] $Container, [string] $LogDir, [string] $File, [int] $MaxMatches)
     Assert-SafePath -PathValue $LogDir -Field 'logDir'
-    Assert-SafeLogFile -File $File -LogFilePrefix $LogFilePrefix
+    Assert-RequiredLogFile -File $File
     Assert-MaxMatches -MaxMatches $MaxMatches
     $inner = "cd -- $LogDir && { grep -F -- ERROR $File 2>/dev/null; grep -F -- Exception $File 2>/dev/null; grep -F -- FATAL $File 2>/dev/null; grep -F -- Traceback $File 2>/dev/null; grep -F -- panic $File 2>/dev/null; grep -F -- failed $File 2>/dev/null; grep -F -- timeout $File 2>/dev/null; grep -F -- WARN $File 2>/dev/null; } | tail -n $MaxMatches"
     return New-DockerExecShellCommand -Container $Container -InnerCommand $inner
