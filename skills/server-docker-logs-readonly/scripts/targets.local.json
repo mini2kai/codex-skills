@@ -1,0 +1,24 @@
+{
+  "targets": {
+    "example-dev": {
+      "description": "示例开发服务器",
+      "ssh": {
+        "host": "your-host-or-ssh-alias",
+        "user": "readonly-user",
+        "port": 22,
+        "auth": {
+          "type": "password",
+          "password": "replace-with-local-password"
+        }
+      },
+      "containers": {
+        "example-backend": {
+          "description": "示例后端服务容器",
+          "logDir": "logs",
+          "logFilePrefix": "MODULE_INSTANCE.log",
+          "defaultLogFile": "MODULE_INSTANCE.log"
+        }
+      }
+    }
+  }
+}

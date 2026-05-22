@@ -30,6 +30,12 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill codex-skill-dev
 ```
 
+安装 `server-docker-logs-readonly`：
+
+```powershell
+irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill server-docker-logs-readonly
+```
+
 安装结果：
 
 ```text
@@ -55,6 +61,7 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 | `lark-cli-config` | 分步引导 lark-cli 授权配置，封装 Feishu document/wiki/sheet 安全操作。 |
 | `postgres-query` | 引导式 PostgreSQL 临时连接配置、只读查询、表结构查看和查询计划分析；风险操作只生成 SQL 不执行。 |
 | `codex-skill-dev` | 中文 Codex skill 开发、验证、仓库同步和 GitHub 发布流程；沉淀 Windows/PowerShell、编码、校验和常见错误避坑。 |
+| `server-docker-logs-readonly` | 本地脚本白名单模式查询 Docker 容器内服务日志文件；真实服务器配置只保留在本地。 |
 
 ## 常用命令
 
@@ -77,6 +84,14 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 ```powershell
 irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill codex-skill-dev
 ```
+
+### 安装 `server-docker-logs-readonly`
+
+```powershell
+irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill server-docker-logs-readonly
+```
+
+`server-docker-logs-readonly` 用于通过本地白名单脚本查询 Docker 容器内的服务日志文件，例如 `logs/MODULE_INSTANCE.log` 和滚动文件 `MODULE_INSTANCE.log.YYYY-MM-DD`。通用脚本和示例格式配置 `skills/server-docker-logs-readonly/scripts/targets.local.json` 会随 skill 一起下载；真实配置仍只能放在被 Git 忽略的 `custom_script/server-docker-logs-readonly/targets.local.json`。Codex 不允许直接运行 SSH、Docker、docker exec、sudo 或任何服务器命令。
 
 `codex-skill-dev` 用于开发、验证、同步和发布本仓库里的 skill，包含 Windows/PowerShell、UTF-8 编码、manifest/README 同步和 GitHub 发布避坑流程。
 
@@ -200,6 +215,7 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/lark-cli-config
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/postgres-query
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/codex-skill-dev
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/server-docker-logs-readonly
 ```
 
 ## 本地仓库安装
@@ -230,6 +246,10 @@ codex-skills/
 │   │   ├── SKILL.md
 │   │   ├── agents/
 │   │   ├── references/
+│   │   └── scripts/
+│   ├── server-docker-logs-readonly/
+│   │   ├── SKILL.md
+│   │   ├── agents/
 │   │   └── scripts/
 │   └── codex-skill-dev/
 │       ├── SKILL.md

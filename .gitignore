@@ -16,3 +16,6 @@ __pycache__/
 
 # Codex/local backups
 .backup/
+
+# Local private scripts and server access details
+custom_script/
