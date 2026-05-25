@@ -1,7 +1,7 @@
 interface:
-  display_name: "服务器 Docker 日志只读查询"
-  short_description: "按配置目录只读查询容器日志文件"
-  default_prompt: "使用 $server-docker-logs-readonly 通过本地白名单脚本只读查询 Docker 容器内指定日志目录下的文件。"
+  display_name: "服务器日志只读查询"
+  short_description: "按日志源只读查询服务器日志"
+  default_prompt: "使用 $server-docker-logs-readonly 通过本地白名单脚本只读查询服务器日志源，优先读取绝对目录，Docker 仅作为备用方案。"
 
 policy:
   allow_implicit_invocation: true

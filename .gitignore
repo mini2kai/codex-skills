@@ -19,3 +19,6 @@ __pycache__/
 
 # Local private scripts and server access details
 custom_script/
+
+# Local server-docker-logs-readonly audit logs
+skills/server-docker-logs-readonly/logs/

@@ -52,7 +52,7 @@
     },
     "server-docker-logs-readonly": {
       "path": "skills/server-docker-logs-readonly",
-      "description": "本地脚本白名单模式查询 Docker 容器内指定日志目录下的文件；配置文件随 skill 一起下载。",
+      "description": "本地脚本白名单模式查询服务器绝对目录日志，并保留 Docker 日志读取作为备用方案。",
       "tags": [
         "server",
         "docker",
