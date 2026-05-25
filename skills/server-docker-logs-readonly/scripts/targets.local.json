@@ -1,31 +1,40 @@
 {
   "_fieldDescriptions": {
-    "targets": "所有服务器目标配置，key 是给 Codex 使用的目标别名。",
-    "targets.<target>": "单个服务器目标配置，<target> 是目标别名，例如 example-dev。",
-    "targets.<target>.description": "目标说明，只用于展示和选择，不参与连接。",
-    "targets.<target>.defaultAccount": "默认账号别名；source 没写 account 时会使用该账号。",
-    "targets.<target>.accounts": "该服务器下可用的 SSH 账号集合，同一服务器可以配置多个账号。",
-    "targets.<target>.accounts.<account>": "单个账号配置，<account> 是账号别名，例如 readonly 或 operator。",
-    "targets.<target>.accounts.<account>.description": "账号说明，只用于展示。",
-    "targets.<target>.accounts.<account>.role": "账号角色说明，例如 readonly 或 operator；实际权限以 permissions 为准。",
-    "targets.<target>.accounts.<account>.ssh": "SSH 连接信息。",
-    "targets.<target>.accounts.<account>.ssh.host": "服务器地址，或本机 SSH config 中的 Host 别名。",
-    "targets.<target>.accounts.<account>.ssh.user": "SSH 用户名。",
-    "targets.<target>.accounts.<account>.ssh.port": "SSH 端口。",
-    "targets.<target>.accounts.<account>.ssh.auth": "SSH 认证配置。",
-    "targets.<target>.accounts.<account>.ssh.auth.type": "认证方式；password 表示密码登录。",
-    "targets.<target>.accounts.<account>.ssh.auth.password": "SSH 密码；公开仓库必须保留占位值，真实值只填在自己的安装目录。",
-    "targets.<target>.accounts.<account>.permissions": "该账号允许使用的日志读取能力。",
-    "targets.<target>.accounts.<account>.permissions.hostDir": "是否允许读取服务器绝对目录日志。",
-    "targets.<target>.accounts.<account>.permissions.docker": "是否允许通过 Docker 备用方案读取容器内日志。",
-    "targets.<target>.sources": "日志源集合；查询日志时通过 Source 参数选择这里的 key。",
-    "targets.<target>.sources.<source>": "单个日志源配置，<source> 是日志源别名，例如 app-host-log。",
-    "targets.<target>.sources.<source>.description": "日志源说明，只用于展示和选择。",
-    "targets.<target>.sources.<source>.type": "日志源类型；host_dir 表示服务器绝对目录，docker 表示 Docker 容器内目录。",
-    "targets.<target>.sources.<source>.account": "读取该日志源时使用的账号别名；必须存在于 accounts 中。",
-    "targets.<target>.sources.<source>.absDir": "host_dir 类型使用；服务器上 pwd 给出的日志绝对目录，必须以 / 开头。",
-    "targets.<target>.sources.<source>.container": "docker 类型使用；Docker 容器名。",
-    "targets.<target>.sources.<source>.logDir": "docker 类型使用；容器内日志目录，相对路径，例如 logs；不配置固定文件名前缀。"
+    "targets": "服务器目标集合；每个 key 是一个 Target 别名。",
+    "target": {
+      "description": "目标说明，只用于展示和选择，不参与连接。",
+      "defaultAccount": "默认账号别名；Source 没写 account 时使用该账号。",
+      "accounts": "该服务器下可用的 SSH 账号集合。",
+      "sources": "该服务器下可查询的日志源集合。"
+    },
+    "account": {
+      "description": "账号说明，只用于展示。",
+      "role": "账号角色说明，例如 readonly 或 operator；实际权限以 permissions 为准。",
+      "ssh": "SSH 连接信息。",
+      "permissions": "该账号允许使用的日志读取能力。"
+    },
+    "ssh": {
+      "host": "服务器地址，或本机 SSH config 中的 Host 别名。",
+      "user": "SSH 用户名。",
+      "port": "SSH 端口。",
+      "auth": "SSH 认证配置。"
+    },
+    "auth": {
+      "type": "认证方式；password 表示密码登录。",
+      "password": "SSH 密码；真实值只填在自己的本地配置文件中，不要提交到 Git。"
+    },
+    "permissions": {
+      "hostDir": "是否允许读取服务器绝对目录日志。",
+      "docker": "是否允许通过 Docker 备用方案读取容器内日志。"
+    },
+    "source": {
+      "description": "日志源说明，只用于展示和选择。",
+      "type": "日志源类型；host_dir 表示服务器绝对目录，docker 表示 Docker 容器内目录。",
+      "account": "读取该日志源时使用的账号别名；必须存在于 accounts 中。",
+      "absDir": "host_dir 类型使用；服务器上 pwd 给出的日志绝对目录，必须以 / 开头。",
+      "container": "docker 类型使用；Docker 容器名。",
+      "logDir": "docker 类型使用；容器内日志目录，相对路径，例如 logs；不配置固定文件名前缀。"
+    }
   },
   "targets": {
     "example-dev": {

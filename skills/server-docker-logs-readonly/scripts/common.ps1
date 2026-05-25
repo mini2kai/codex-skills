@@ -52,7 +52,7 @@ function Write-AuditLog {
 function Get-LocalConfig {
     $path = Get-LocalConfigPath
     if (-not (Test-Path -LiteralPath $path)) {
-        Write-Json @{ ok = $false; error = 'config_missing'; message = '缺少 skill 内置配置：scripts/targets.local.json'; next_action = '请在当前 skill 的 scripts/targets.local.json 中配置 targets、accounts 和 sources。' } 2
+        Write-Json @{ ok = $false; error = 'config_missing'; message = '缺少服务器日志配置：scripts/targets.local.json'; next_action = '请在当前 skill 的 scripts/targets.local.json 中配置 targets、accounts 和 sources。' } 2
     }
     try {
         return Get-Content -Raw -LiteralPath $path | ConvertFrom-Json

@@ -19,7 +19,7 @@
     },
     "postgres-query": {
       "path": "skills/postgres-query",
-      "description": "引导式 PostgreSQL 临时连接配置、只读查询、表结构查看和查询计划分析；风险操作只生成 SQL 不执行。",
+      "description": "引导式 PostgreSQL 临时连接和本机多 profile 配置、只读查询、表结构查看和查询计划分析；风险操作只生成 SQL 不执行。",
       "tags": [
         "postgresql",
         "pgsql",
@@ -27,11 +27,13 @@
         "query",
         "readonly",
         "schema",
-        "explain"
+        "explain",
+        "profiles"
       ],
       "requires": [
         "python",
-        "psycopg or psycopg2"
+        "psycopg or psycopg2",
+        "edit skills/postgres-query/scripts/connections.local.json for reusable profiles"
       ]
     },
     "codex-skill-dev": {
@@ -52,7 +54,7 @@
     },
     "server-docker-logs-readonly": {
       "path": "skills/server-docker-logs-readonly",
-      "description": "本地脚本白名单模式查询服务器绝对目录日志，并保留 Docker 日志读取作为备用方案。",
+      "description": "本地脚本白名单模式按本地配置查询服务器绝对目录日志，并保留 Docker 日志读取作为备用方案。",
       "tags": [
         "server",
         "docker",

@@ -30,7 +30,7 @@ skills/server-docker-logs-readonly/scripts/
 skills/server-docker-logs-readonly/scripts/targets.local.json
 ```
 
-公开仓库里的配置只放示例数据。安装后，使用者在自己本机的 skill 目录中编辑该配置；如果在本仓库开发目录调试，不能提交填过真实信息的 `targets.local.json`。
+`targets.local.json` 直接内置示例数据。安装后，使用者在自己本机的 skill 目录中编辑该配置，可配置多个服务器目标、账号和日志源；如果在本仓库开发目录调试，不能提交填过真实密码的配置文件。
 
 本地审计日志自动写入并保留 7 天：
 
@@ -68,6 +68,13 @@ skills/server-docker-logs-readonly/scripts/get-container-info.ps1
 - `sources`：日志源集合。
 - `type: "host_dir"`：读取服务器绝对目录 `absDir`。
 - `type: "docker"`：读取容器 `container` 内的相对目录 `logDir`。
+
+## 本地配置规则
+
+- `targets.local.json` 是唯一服务器配置文件，内置示例数据。
+- 同一个 `targets` 下可以配置多个服务器目标；同一个服务器目标下可以配置多个 `accounts` 和多个 `sources`。
+- 不要把真实密码、token、私钥或生产敏感连接信息提交到公开仓库。
+- 查询前必须先用列表脚本确认目标、账号、日志源和文件名，不能绕过白名单脚本直连服务器。
 
 ## 标准流程
 

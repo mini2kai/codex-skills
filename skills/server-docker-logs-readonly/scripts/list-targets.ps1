@@ -11,8 +11,8 @@ foreach ($property in $config.targets.PSObject.Properties) {
         name = $property.Name
         description = if ($item.PSObject.Properties.Name.Contains('description')) { [string]$item.description } else { '' }
         default_account = if ($item.PSObject.Properties.Name.Contains('defaultAccount')) { [string]$item.defaultAccount } else { '' }
-        accounts = $accounts
-        sources = $sources
+        accounts = [object[]]$accounts
+        sources = [object[]]$sources
     }
 }
-Write-Json @{ ok = $true; targets = $targets }
+Write-Json @{ ok = $true; targets = [object[]]$targets }

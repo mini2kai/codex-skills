@@ -21,4 +21,4 @@ foreach ($property in $targetConfig.sources.PSObject.Properties) {
     }
     $sources += $source
 }
-Write-Json @{ ok = $true; target = $Target; sources = $sources }
+Write-Json @{ ok = $true; target = $Target; sources = [object[]]$sources }

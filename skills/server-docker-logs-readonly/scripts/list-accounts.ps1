@@ -19,4 +19,4 @@ foreach ($property in $targetConfig.accounts.PSObject.Properties) {
     }
 }
 $defaultAccount = Get-StringOrDefault -Object $targetConfig -Name 'defaultAccount'
-Write-Json @{ ok = $true; target = $Target; default_account = $defaultAccount; accounts = $accounts }
+Write-Json @{ ok = $true; target = $Target; default_account = $defaultAccount; accounts = [object[]]$accounts }

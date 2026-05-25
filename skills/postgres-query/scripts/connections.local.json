@@ -1,0 +1,36 @@
+{
+  "_fieldDescriptions": {
+    "defaultProfile": "默认连接别名；脚本未传 --profile 且没有环境变量连接时会使用该 profile。",
+    "profiles": "所有 PostgreSQL 连接配置，key 是给 Codex 使用的连接别名。",
+    "profiles.<profile>.description": "连接说明，只用于展示和选择。",
+    "profiles.<profile>.host": "数据库地址。",
+    "profiles.<profile>.port": "数据库端口。",
+    "profiles.<profile>.dbname": "数据库名；也兼容 database。",
+    "profiles.<profile>.user": "数据库用户名；也兼容 username。",
+    "profiles.<profile>.passwordEnv": "推荐方式：从指定环境变量读取密码，避免密码写入文件。",
+    "profiles.<profile>.password": "可选方式：仅限个人本机使用；公开仓库必须保留占位值。",
+    "profiles.<profile>.sslmode": "可选 SSL 模式，例如 require、disable。",
+    "profiles.<profile>.dsn": "可选完整 DSN；配置 dsn 时会优先使用 dsn，其它字段不参与拼接。"
+  },
+  "defaultProfile": "example-readonly-db",
+  "profiles": {
+    "example-readonly-db": {
+      "description": "只读 PostgreSQL 连接示例",
+      "host": "your-db-host",
+      "port": 5432,
+      "dbname": "your_db",
+      "user": "readonly_user",
+      "passwordEnv": "PGPASSWORD_EXAMPLE_READONLY_DB",
+      "sslmode": "disable"
+    },
+    "example-readonly-db": {
+      "description": "另一个只读库示例",
+      "host": "your-db-host",
+      "port": 5432,
+      "dbname": "your_db",
+      "user": "readonly_user",
+      "passwordEnv": "PGPASSWORD_ANOTHER_READONLY_DB",
+      "sslmode": "disable"
+    }
+  }
+}

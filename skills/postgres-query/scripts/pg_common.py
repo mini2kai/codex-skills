@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 from typing import Any, Iterable
 
 BANNED_TOKENS = {
@@ -32,6 +33,8 @@ BANNED_TOKENS = {
 
 ALLOWED_START = {"SELECT", "WITH", "SHOW", "EXPLAIN"}
 
+CONNECTION_CONFIG = Path(__file__).resolve().parent / "connections.local.json"
+
 
 def emit(payload: dict[str, Any], exit_code: int = 0) -> None:
     print(json.dumps(payload, ensure_ascii=False, default=str, indent=2))
@@ -42,13 +45,124 @@ def redact(value: str | None) -> str | None:
     if not value:
         return value
     value = re.sub(r"(postgres(?:ql)?://[^:/@]+:)[^@]+(@)", r"\1***\2", value, flags=re.I)
-    value = re.sub(r"(password=)[^\s]+", r"\1***", value, flags=re.I)
+    value = re.sub(r"(password=)(?:'[^']*'|[^\s]+)", r"\1***", value, flags=re.I)
     return value
+
+
+def quote_conn_value(value: Any) -> str:
+    text = str(value)
+    escaped = text.replace("\\", "\\\\").replace("'", "\\'")
+    return f"'{escaped}'"
+
+
+def load_connection_config(required: bool = False) -> dict[str, Any] | None:
+    if not CONNECTION_CONFIG.exists():
+        if required:
+            emit(
+                {
+                    "ok": False,
+                    "error": "config_missing",
+                    "message": "缺少 PostgreSQL 本地连接配置：scripts/connections.local.json。",
+                    "next_action": "请在当前 skill 的 scripts/connections.local.json 中配置 profiles；真实密码不要提交到仓库。",
+                },
+                2,
+            )
+        return None
+    try:
+        with CONNECTION_CONFIG.open("r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except Exception as exc:
+        emit(
+            {
+                "ok": False,
+                "error": "config_invalid",
+                "message": str(exc),
+                "next_action": "请修正 scripts/connections.local.json。该文件必须是标准 JSON。",
+            },
+            2,
+        )
+    if not isinstance(data, dict):
+        emit({"ok": False, "error": "config_invalid", "message": "connections.local.json 顶层必须是 JSON 对象。"}, 2)
+    return data
+
+
+def get_profiles(config: dict[str, Any]) -> dict[str, Any]:
+    profiles = config.get("profiles")
+    if not isinstance(profiles, dict):
+        emit({"ok": False, "error": "config_invalid", "message": "connections.local.json 必须配置 profiles 对象。"}, 2)
+    return profiles
+
+
+def build_profile_dsn(profile: dict[str, Any], profile_name: str) -> str:
+    if profile.get("dsn"):
+        return str(profile["dsn"])
+
+    password = profile.get("password")
+    password_env = profile.get("passwordEnv")
+    if password_env:
+        password = os.environ.get(str(password_env))
+        if password is None:
+            emit(
+                {
+                    "ok": False,
+                    "error": "password_env_missing",
+                    "profile": profile_name,
+                    "message": f"Profile {profile_name} 使用 passwordEnv={password_env}，但当前环境变量未设置。",
+                },
+                2,
+            )
+
+    parts = {
+        "host": profile.get("host"),
+        "port": profile.get("port", 5432),
+        "dbname": profile.get("dbname") or profile.get("database"),
+        "user": profile.get("user") or profile.get("username"),
+        "password": password,
+        "sslmode": profile.get("sslmode"),
+    }
+    missing = [key for key in ("host", "dbname", "user") if not parts.get(key)]
+    if missing:
+        emit(
+            {
+                "ok": False,
+                "error": "config_invalid",
+                "profile": profile_name,
+                "message": "Profile 缺少必填字段：" + ", ".join(missing),
+            },
+            2,
+        )
+    return " ".join(f"{key}={quote_conn_value(value)}" for key, value in parts.items() if value is not None and value != "")
+
+
+def resolve_profile_dsn(profile_name: str | None) -> str | None:
+    config = load_connection_config(required=bool(profile_name))
+    if not config:
+        return None
+    profiles = get_profiles(config)
+    selected = profile_name or config.get("defaultProfile")
+    if not selected:
+        return None
+    selected = str(selected)
+    profile = profiles.get(selected)
+    if not isinstance(profile, dict):
+        emit(
+            {
+                "ok": False,
+                "error": "profile_not_found",
+                "profile": selected,
+                "message": "本地连接配置中没有该 profile。",
+                "available_profiles": sorted(profiles.keys()),
+            },
+            2,
+        )
+    return build_profile_dsn(profile, selected)
 
 
 def resolve_dsn(args: argparse.Namespace) -> str | None:
     if getattr(args, "dsn", None):
         return args.dsn
+    if getattr(args, "profile", None):
+        return resolve_profile_dsn(args.profile)
     if os.environ.get("POSTGRES_DSN"):
         return os.environ["POSTGRES_DSN"]
     required = ["PGHOST", "PGDATABASE", "PGUSER"]
@@ -62,11 +176,12 @@ def resolve_dsn(args: argparse.Namespace) -> str | None:
             "sslmode": os.environ.get("PGSSLMODE"),
         }
         return " ".join(f"{key}={value}" for key, value in parts.items() if value)
-    return None
+    return resolve_profile_dsn(None)
 
 
 def add_connection_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--dsn", help="临时 PostgreSQL DSN。为减少 shell 历史暴露，重复使用时优先放到环境变量。")
+    parser.add_argument("--profile", help="读取 scripts/connections.local.json 中的连接别名。")
     parser.add_argument("--timeout", type=int, default=30, help="语句超时时间，单位秒。默认：30。")
 
 
