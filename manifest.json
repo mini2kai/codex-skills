@@ -70,6 +70,21 @@
         "paramiko",
         "edit skills/server-docker-logs-readonly/scripts/targets.local.json"
       ]
+    },
+    "work-orchestrator": {
+      "path": "skills/work-orchestrator",
+      "description": "手动触发的轻量总控编排 Skill，用于先分析不修改、证据收集、方案设计、验证计划，并按能力灵活编排专业 Skill。",
+      "tags": [
+        "orchestration",
+        "planning",
+        "diagnosis",
+        "evidence",
+        "manual",
+        "workflow"
+      ],
+      "requires": [
+        "none"
+      ]
     }
   }
 }

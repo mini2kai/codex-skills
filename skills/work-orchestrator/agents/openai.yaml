@@ -1,0 +1,7 @@
+interface:
+  display_name: "总控编排"
+  short_description: "手动触发的轻量分析、方案设计与专业 Skill 编排"
+  default_prompt: "Use $work-orchestrator 先分析不修改，先给证据、方案和验证步骤。"
+
+policy:
+  allow_implicit_invocation: false

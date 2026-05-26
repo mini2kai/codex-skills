@@ -36,6 +36,12 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill server-docker-logs-readonly
 ```
 
+安装 `work-orchestrator`：
+
+```powershell
+irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill work-orchestrator
+```
+
 安装结果：
 
 ```text
@@ -62,6 +68,7 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 | `postgres-query` | 引导式 PostgreSQL 临时连接和本机多 profile 配置、只读查询、表结构查看和查询计划分析；风险操作只生成 SQL 不执行。 |
 | `codex-skill-dev` | 中文 Codex skill 开发、验证、仓库同步和 GitHub 发布流程；沉淀 Windows/PowerShell、编码、校验和常见错误避坑。 |
 | `server-docker-logs-readonly` | 本地脚本白名单模式按本地配置查询服务器绝对目录日志，并保留 Docker 日志读取作为备用方案。 |
+| `work-orchestrator` | 手动触发的轻量总控编排 Skill，用于先分析不修改、证据收集、方案设计、验证计划，并按能力灵活编排专业 Skill。 |
 
 ## 常用命令
 
@@ -101,6 +108,14 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 ```
 
 `server-docker-logs-readonly` 用于通过本地白名单脚本查询服务器绝对目录日志，并保留 Docker 容器内日志读取作为备用方案。通用脚本和示例配置 `scripts/targets.local.json` 会随 skill 一起下载；安装后直接在自己的 skill 目录中配置多个目标、账号、权限和日志源。查询前先列出日志源和文件，再指定 `File` 读取。所有服务器读取操作会写入本地 `logs/` 审计日志，保留 7 天且不提交 Git。Codex 不允许直接运行 SSH、Docker、docker exec、sudo 或任何服务器命令。
+
+### 安装 `work-orchestrator`
+
+```powershell
+irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill work-orchestrator
+```
+
+`work-orchestrator` 是手动触发的轻量总控编排 Skill。建议通过 `$work-orchestrator` 或 UI 手动选择启用，适合“先分析不修改”“先定位再出方案”的工作流，用于先完成证据收集、影响范围评估、方案设计和验证计划，并根据当前环境可用 Skill 的能力动态编排。它不默认参与普通开发请求，也不在分析阶段直接修改代码或配置。
 
 `codex-skill-dev` 用于开发、验证、同步和发布本仓库里的 skill，包含 Windows/PowerShell、UTF-8 编码、manifest/README 同步和 GitHub 发布避坑流程。
 
@@ -163,7 +178,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1 codex-skill-dev -Force
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `Skill` | 字符串 | 无 | 要安装的 skill 名称，例如 `lark-cli-config`、`postgres-query` 或 `codex-skill-dev`。使用 `-List` 时可以不传。 |
+| `Skill` | 字符串 | 无 | 要安装的 skill 名称，例如 `lark-cli-config`、`postgres-query`、`codex-skill-dev` 或 `work-orchestrator`。使用 `-List` 时可以不传。 |
 | `-List` | 开关 | 关闭 | 查询仓库里当前可安装的 skill。 |
 | `-Force` | 开关 | 关闭 | 允许覆盖当前目录下已有的同名 skill。覆盖前会自动备份。 |
 | `-Repo` | 字符串 | `mini2kai/codex-skills` | GitHub 仓库，格式是 `owner/repo`。 |
@@ -225,6 +240,7 @@ python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-gi
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/postgres-query
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/codex-skill-dev
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/server-docker-logs-readonly
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/work-orchestrator
 ```
 
 ## 本地仓库安装
@@ -260,6 +276,9 @@ codex-skills/
 │   │   ├── SKILL.md
 │   │   ├── agents/
 │   │   └── scripts/
+│   ├── work-orchestrator/
+│   │   ├── SKILL.md
+│   │   └── agents/
 │   └── codex-skill-dev/
 │       ├── SKILL.md
 │       ├── agents/
