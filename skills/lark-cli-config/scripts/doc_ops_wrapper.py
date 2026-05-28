@@ -1,13 +1,14 @@
 import argparse
-from pathlib import Path
 
 from common import (
     add_common_args,
     check_auth_status,
     ensure_utf8_file,
+    extract_created_doc_reference,
     infer_title_from_fetch_output,
     json_exit,
     load_reference_json,
+    normalize_document_target,
     run_cli,
 )
 
@@ -26,27 +27,60 @@ def risk_info(operation):
     })
 
 
-def require_auth():
-    auth = check_auth_status()
+def require_auth(as_identity="user"):
+    auth = check_auth_status(as_identity)
     if not auth["ok"]:
         json_exit({
             "ok": False,
             "stage": "auth_check",
             "error_type": "auth_missing",
+            "requiredIdentity": auth.get("requiredIdentity"),
             "identity": auth.get("identity"),
             "tokenStatus": auth.get("tokenStatus"),
+            "expiresAt": auth.get("expiresAt"),
             "message": auth.get("message") or "当前没有可用 user 授权",
-            "next_action": "run_lz_lark_cli_config_auth",
+            "diagnostics": auth.get("diagnostics"),
+            "next_action": "run_auth_login",
         }, code=1)
     return auth
 
 
-def fetch_doc(doc, as_identity="user", output_format="pretty"):
-    return run_cli(["docs", "+fetch", "--doc", doc, "--as", as_identity, "--format", output_format], timeout=120)
+def fetch_doc(doc_arg, as_identity="user", output_format="pretty"):
+    return run_cli(["docs", "+fetch", "--doc", doc_arg, "--as", as_identity, "--format", output_format], timeout=120)
+
+
+def resolve_target_or_exit(args, stage):
+    target = normalize_document_target(target=args.target, doc=args.doc, wiki_node=args.wiki_node)
+    if not target["ok"]:
+        json_exit({
+            "ok": False,
+            "stage": stage,
+            "operation": args.operation,
+            "target": target,
+            "message": target["message"],
+            "next_action": target.get("next_action"),
+        }, code=1)
+    return target
+
+
+def error_message(result, fallback):
+    diagnostics = result.get("diagnostics") or {}
+    return diagnostics.get("message") or result.get("stderr") or result.get("stdout") or fallback
+
+
+def create_result_message(result, created_target, verify):
+    if result["ok"] and created_target.get("ok") and verify["ok"]:
+        return "文档创建成功并完成 fetch 验证"
+    if result["ok"] and not created_target.get("ok"):
+        return created_target.get("message") or "文档已创建，但未能从 CLI 输出解析新文档链接或 doc_token"
+    if result["ok"] and created_target.get("ok") and not verify["ok"]:
+        return error_message(verify, "文档已创建，但 fetch 验证失败")
+    return error_message(result, "文档创建失败")
 
 
 def preflight_docs_fetch(args):
-    auth = require_auth()
+    target = resolve_target_or_exit(args, "preflight")
+    auth = require_auth(args.as_identity)
     info = risk_info("docs_fetch")
     json_exit({
         "ok": True,
@@ -55,15 +89,16 @@ def preflight_docs_fetch(args):
         "risk": info["risk"],
         "requires_confirmation": info["requires_confirmation"],
         "identity": auth.get("identity"),
-        "target": {"type": "doc", "doc": args.doc},
+        "target": target,
         "message": "读取操作风险较低，可直接 execute。",
         "next_action": "execute_docs_fetch",
     })
 
 
 def execute_docs_fetch(args):
-    auth = require_auth()
-    result = fetch_doc(args.doc, args.as_identity, args.format)
+    target = resolve_target_or_exit(args, "execute")
+    auth = require_auth(args.as_identity)
+    result = fetch_doc(target["doc_arg"], args.as_identity, args.format)
     title = infer_title_from_fetch_output(result.get("stdout", ""))
     json_exit({
         "ok": result["ok"],
@@ -71,19 +106,20 @@ def execute_docs_fetch(args):
         "operation": "docs_fetch",
         "risk": risk_info("docs_fetch")["risk"],
         "identity": auth.get("identity"),
-        "target": {"type": "doc", "doc": args.doc, "title": title},
+        "target": {**target, "title": title},
         "result": {
             "verified": result["ok"],
             "title": title,
             "content_preview": result.get("stdout", "")[:1200] if args.include_preview else None,
         },
-        "message": "文档读取成功" if result["ok"] else (result.get("stderr") or result.get("stdout") or "文档读取失败"),
+        "diagnostics": result.get("diagnostics"),
+        "message": "文档读取成功" if result["ok"] else error_message(result, "文档读取失败"),
         "next_action": None if result["ok"] else "inspect_docs_fetch_error",
     }, code=0 if result["ok"] else 1)
 
 
 def preflight_docs_create(args):
-    auth = require_auth()
+    auth = require_auth(args.as_identity)
     file_info = ensure_utf8_file(args.markdown)
     info = risk_info("docs_create")
     ok = file_info["ok"] and bool(args.title)
@@ -102,7 +138,7 @@ def preflight_docs_create(args):
 
 
 def execute_docs_create(args):
-    auth = require_auth()
+    auth = require_auth(args.as_identity)
     file_info = ensure_utf8_file(args.markdown)
     if not file_info["ok"]:
         json_exit({
@@ -117,24 +153,36 @@ def execute_docs_create(args):
     if args.wiki_node:
         cli_args[2:2] = ["--wiki-node", args.wiki_node]
     result = run_cli(cli_args, timeout=180)
+    created_target = extract_created_doc_reference(result.get("stdout", "")) if result["ok"] else {"ok": False}
+    verify = fetch_doc(created_target["doc_arg"], args.as_identity, "pretty") if created_target.get("ok") else {"ok": False, "stdout": "", "stderr": "created target unresolved"}
+    title = infer_title_from_fetch_output(verify.get("stdout", ""))
     json_exit({
-        "ok": result["ok"],
+        "ok": result["ok"] and created_target.get("ok") and verify["ok"],
         "stage": "execute",
         "operation": "docs_create",
         "risk": risk_info("docs_create")["risk"],
         "identity": auth.get("identity"),
         "target": {"type": "wiki_node", "wiki_node": args.wiki_node, "title": args.title},
+        "created_target": {**created_target, "title": title} if created_target.get("ok") else created_target,
         "local_input": file_info,
+        "result": {
+            "create_ok": result["ok"],
+            "target_resolved": created_target.get("ok", False),
+            "fetch_verify_ok": verify["ok"],
+            "title": title,
+        },
         "raw_result_preview": result.get("stdout", "")[:1200],
-        "message": "文档创建成功" if result["ok"] else (result.get("stderr") or result.get("stdout") or "文档创建失败"),
-        "next_action": "fetch_created_doc_to_verify" if result["ok"] else "inspect_docs_create_error",
-    }, code=0 if result["ok"] else 1)
+        "diagnostics": result.get("diagnostics") or verify.get("diagnostics"),
+        "message": create_result_message(result, created_target, verify),
+        "next_action": None if result["ok"] and created_target.get("ok") and verify["ok"] else "inspect_docs_create_or_verify_error",
+    }, code=0 if result["ok"] and created_target.get("ok") and verify["ok"] else 1)
 
 
 def preflight_docs_update_overwrite(args):
-    auth = require_auth()
+    target = resolve_target_or_exit(args, "preflight")
+    auth = require_auth(args.as_identity)
     info = risk_info("docs_update_overwrite")
-    fetch = fetch_doc(args.doc, args.as_identity, "pretty")
+    fetch = fetch_doc(target["doc_arg"], args.as_identity, "pretty")
     title = infer_title_from_fetch_output(fetch.get("stdout", ""))
     file_info = ensure_utf8_file(args.markdown)
     ok = fetch["ok"] and file_info["ok"]
@@ -145,7 +193,7 @@ def preflight_docs_update_overwrite(args):
         "risk": info["risk"],
         "requires_confirmation": True,
         "identity": auth.get("identity"),
-        "target": {"type": "doc", "doc": args.doc, "title": title, "fetch_verified": fetch["ok"]},
+        "target": {**target, "title": title, "fetch_verified": fetch["ok"]},
         "local_input": file_info,
         "impact": [
             "目标 Feishu 文档正文将被本地 markdown 完整替换。",
@@ -153,13 +201,15 @@ def preflight_docs_update_overwrite(args):
             "执行后会立即 docs +fetch 校验标题和主要内容。",
         ],
         "confirm_phrase": "确认覆盖该 Feishu 文档",
+        "diagnostics": fetch.get("diagnostics"),
         "message": "覆盖更新前置检查通过，等待使用者确认" if ok else "覆盖更新前置检查未通过",
         "next_action": "ask_user_confirmation" if ok else "fix_preflight_blocker",
     }, code=0 if ok else 1)
 
 
 def execute_docs_update_overwrite(args):
-    auth = require_auth()
+    target = resolve_target_or_exit(args, "execute")
+    auth = require_auth(args.as_identity)
     if not args.confirmed:
         json_exit({
             "ok": False,
@@ -181,8 +231,8 @@ def execute_docs_update_overwrite(args):
             "message": "markdown 文件检查失败，拒绝覆盖更新",
             "next_action": "fix_markdown_file",
         }, code=1)
-    update = run_cli(["docs", "+update", "--doc", args.doc, "--mode", "overwrite", "--markdown", f"@{file_info['path']}", "--as", args.as_identity], timeout=180)
-    verify = fetch_doc(args.doc, args.as_identity, "pretty") if update["ok"] else {"ok": False, "stdout": "", "stderr": "update failed"}
+    update = run_cli(["docs", "+update", "--doc", target["doc_arg"], "--mode", "overwrite", "--markdown", f"@{file_info['path']}", "--as", args.as_identity], timeout=180)
+    verify = fetch_doc(target["doc_arg"], args.as_identity, "pretty") if update["ok"] else {"ok": False, "stdout": "", "stderr": "update failed"}
     title = infer_title_from_fetch_output(verify.get("stdout", ""))
     json_exit({
         "ok": update["ok"] and verify["ok"],
@@ -190,10 +240,11 @@ def execute_docs_update_overwrite(args):
         "operation": "docs_update_overwrite",
         "risk": risk_info("docs_update_overwrite")["risk"],
         "identity": auth.get("identity"),
-        "target": {"type": "doc", "doc": args.doc, "title": title},
+        "target": {**target, "title": title},
         "local_input": file_info,
         "result": {"update_ok": update["ok"], "fetch_verify_ok": verify["ok"], "title": title},
-        "message": "覆盖更新成功并完成 fetch 验证" if update["ok"] and verify["ok"] else (update.get("stderr") or verify.get("stderr") or "覆盖更新或验证失败"),
+        "diagnostics": update.get("diagnostics") or verify.get("diagnostics"),
+        "message": "覆盖更新成功并完成 fetch 验证" if update["ok"] and verify["ok"] else error_message(update, verify.get("stderr") or "覆盖更新或验证失败"),
         "next_action": None if update["ok"] and verify["ok"] else "inspect_update_or_verify_error",
     }, code=0 if update["ok"] and verify["ok"] else 1)
 
@@ -216,6 +267,7 @@ def build_parser():
     parser = argparse.ArgumentParser(description="Safe Feishu document operation wrapper")
     parser.add_argument("stage", choices=["preflight", "execute"])
     parser.add_argument("--operation", required=True)
+    parser.add_argument("--target", help="Feishu document/wiki URL, doc_token, or wiki_node_token")
     parser.add_argument("--doc")
     parser.add_argument("--wiki-node")
     parser.add_argument("--title")
@@ -234,8 +286,6 @@ def main():
     if args.stage == "preflight" and args.operation == "docs_fetch":
         preflight_docs_fetch(args)
     elif args.stage == "execute" and args.operation == "docs_fetch":
-        if not args.doc:
-            json_exit({"ok": False, "message": "缺少 --doc", "next_action": "provide_doc"}, code=1)
         execute_docs_fetch(args)
     elif args.stage == "preflight" and args.operation == "docs_create":
         if not args.title or not args.markdown:
@@ -246,12 +296,12 @@ def main():
             json_exit({"ok": False, "message": "缺少 --title 或 --markdown", "next_action": "provide_required_args"}, code=1)
         execute_docs_create(args)
     elif args.stage == "preflight" and args.operation == "docs_update_overwrite":
-        if not args.doc or not args.markdown:
-            json_exit({"ok": False, "message": "缺少 --doc 或 --markdown", "next_action": "provide_required_args"}, code=1)
+        if not args.markdown:
+            json_exit({"ok": False, "message": "缺少 --markdown", "next_action": "provide_required_args"}, code=1)
         preflight_docs_update_overwrite(args)
     elif args.stage == "execute" and args.operation == "docs_update_overwrite":
-        if not args.doc or not args.markdown:
-            json_exit({"ok": False, "message": "缺少 --doc 或 --markdown", "next_action": "provide_required_args"}, code=1)
+        if not args.markdown:
+            json_exit({"ok": False, "message": "缺少 --markdown", "next_action": "provide_required_args"}, code=1)
         execute_docs_update_overwrite(args)
 
 

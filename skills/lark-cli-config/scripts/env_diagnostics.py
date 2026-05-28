@@ -1,8 +1,26 @@
-from common import json_exit, parse_json_text, run_cli
+import re
+
+from common import json_exit, parse_json_text, resolve_lark_cli_command, run_cli
+
+
+VERSION_RE = re.compile(r"\b\d+\.\d+\.\d+\b")
+
+
+def detect_version():
+    result = run_cli(["--version"], timeout=30)
+    text = "\n".join(part for part in (result.get("stdout"), result.get("stderr")) if part)
+    match = VERSION_RE.search(text or "")
+    return {
+        "ok": result["ok"],
+        "version": match.group(0) if match else None,
+        "raw_preview": text[:200],
+    }
 
 
 def main():
+    cli = resolve_lark_cli_command()
     help_result = run_cli(["--help"], timeout=60)
+    version = detect_version()
     doctor_result = run_cli(["doctor"], timeout=90)
     doctor_json = parse_json_text(doctor_result.get("stdout", ""))
 
@@ -31,6 +49,9 @@ def main():
     json_exit({
         "ok": ok,
         "stage": "env_diagnostics",
+        "runner": cli["runner"],
+        "runner_path": cli["path"],
+        "version": version,
         "cli_available": help_result["ok"],
         "doctor_ok": bool(isinstance(doctor_json, dict) and doctor_json.get("ok")) if not token_missing else False,
         "token_missing": token_missing,

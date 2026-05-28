@@ -8,11 +8,14 @@ def status(_args):
     json_exit({
         "ok": auth["ok"],
         "stage": "auth_status",
+        "requiredIdentity": auth.get("requiredIdentity"),
         "identity": auth.get("identity"),
         "tokenStatus": auth.get("tokenStatus"),
         "expiresAt": auth.get("expiresAt"),
+        "expiresInSeconds": auth.get("expiresInSeconds"),
         "userName": auth.get("userName"),
         "message": auth.get("message"),
+        "diagnostics": auth.get("diagnostics"),
         "next_action": None if auth["ok"] else "run_auth_login",
     }, code=0)
 
@@ -34,7 +37,8 @@ def login(args):
         "verification_url": data.get("verification_url"),
         "user_code": data.get("user_code"),
         "expires_in": data.get("expires_in"),
-        "message": "请打开 verification_url 并输入或确认 user_code；脚本将等待授权完成。",
+        "message": "请打开 verification_url，确认 user_code，并授权 lark-cli 访问指定 Feishu 能力；脚本不会要求你输入密码、token 或 cookie。",
+        "domains": args.domain,
         "next_action": "authorize_in_browser",
     }
     print(__import__("json").dumps(print_json, ensure_ascii=False, indent=2), flush=True)
@@ -52,11 +56,14 @@ def login(args):
     json_exit({
         "ok": auth["ok"],
         "stage": "auth_login_verified",
+        "requiredIdentity": auth.get("requiredIdentity"),
         "identity": auth.get("identity"),
         "tokenStatus": auth.get("tokenStatus"),
         "expiresAt": auth.get("expiresAt"),
+        "expiresInSeconds": auth.get("expiresInSeconds"),
         "userName": auth.get("userName"),
         "message": "登录成功并验证通过" if auth["ok"] else "登录完成但验证未通过",
+        "diagnostics": auth.get("diagnostics"),
         "next_action": None if auth["ok"] else "inspect_auth_status",
     }, code=0 if auth["ok"] else 1)
 

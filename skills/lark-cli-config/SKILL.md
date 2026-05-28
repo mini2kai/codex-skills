@@ -11,8 +11,11 @@ metadata:
 
 遇到 Feishu/Lark document、wiki、sheet、drive、base、bitable、权限、授权、`lark-cli` 相关任务时，先使用这个 skill。
 
+当前稳定封装的主链路是 Feishu 文档读写：读取、创建、覆盖更新、写后验证、授权诊断。sheet、base、drive、权限变更等场景会触发本 skill，但如果 wrapper 尚未支持，必须先按“不支持功能时的处理规则”调研并沉淀，不能把未封装能力说成已稳定支持。
+
 典型场景：
 - 读取、fetch、创建、更新、覆盖、发布 Feishu document/wiki。
+- 处理使用者贴出的完整飞书文档链接、wiki 链接、`doc_token`、`wiki_node_token`。
 - 读取或写入 sheet/base/bitable。
 - 处理 Feishu 链接、`doc_token`、`wiki_node_token`、`spreadsheet_token`。
 - 排查 `lark-cli`、scope、authorization URL、`user token`、`bot identity`、`device login`。
@@ -26,9 +29,27 @@ metadata:
 - 授权状态：`python scripts/auth_manager.py status`
 - 引导登录：`python scripts/auth_manager.py login --domain docs,wiki,drive`
 - 登出：`python scripts/auth_manager.py logout`
-- 文档操作：`python scripts/doc_ops_wrapper.py preflight|execute --operation <operation> ...`
+- 文档操作：`python scripts/doc_ops_wrapper.py preflight|execute --operation <operation> --target <url-or-token> ...`
+- 本地自测：`python scripts/self_test.py`
 
-所有脚本输出 JSON。Agent 应读取 JSON 的 `ok`、`next_action`、`requires_confirmation`、`risk`、`message` 字段决定下一步。
+所有脚本输出 JSON。Agent 应读取 JSON 的 `ok`、`stage`、`target`、`diagnostics`、`next_action`、`requires_confirmation`、`risk`、`message` 字段决定下一步。
+
+## 文档读写主链路
+
+所有 Feishu 文档读写按同一条链路执行：
+
+1. `env_diagnostics`：确认 `lark-cli` 或 `npx @larksuite/cli` 可用，记录 runner、路径、版本和阻塞项。
+2. `auth_status`：确认 `user` 授权有效，读取 `identity`、`tokenStatus`、`expiresAt`、`expiresInSeconds`。
+3. `target_resolve`：通过 `--target` 接收完整 URL、`doc_token` 或 `wiki_node_token`，由脚本归一化目标。
+4. `preflight`：读取目标、检查本地 markdown、判断风险和是否需要使用者确认。
+5. `execute`：执行读写操作。高风险写入没有明确确认不得执行。
+6. `post_verify`：写入后必须 fetch/read 验证，并在 JSON 里返回 `fetch_verify_ok`、`title` 和目标信息。
+
+稳定 operation：
+
+- `docs_fetch`：读取文档。低风险，不需要确认。
+- `docs_create`：从本地 UTF-8 markdown 创建文档。创建后必须解析新文档并 fetch 验证。
+- `docs_update_overwrite`：用本地 UTF-8 markdown 覆盖目标文档正文。高风险，必须先 preflight，再等待明确确认后 execute `--confirmed`。
 
 ## 规则导航
 
@@ -42,13 +63,25 @@ metadata:
 
 ## 标准流程
 
-1. 运行 `scripts/env_diagnostics.py`，确认 `lark-cli` 可用。
+1. 运行 `scripts/env_diagnostics.py`，确认 `lark-cli` 可用，并检查 runner、版本、warnings、blocking。
 2. 运行 `scripts/auth_manager.py status`，确认 `identity` 和 `tokenStatus`。
-3. 如果没有 `user` 授权，运行 `scripts/auth_manager.py login --domain docs,wiki,drive`，引导使用者完成浏览器授权。
-4. 读取类操作可用 `doc_ops_wrapper.py execute --operation docs_fetch` 直接执行。
+3. 如果没有 `user` 授权，运行 `scripts/auth_manager.py login --domain docs,wiki,drive`，明确告诉使用者需要打开 verification URL、确认 user code、授权指定 Feishu 能力；不要要求输入密码、token 或 cookie。
+4. 读取类操作可用 `doc_ops_wrapper.py execute --operation docs_fetch --target <url-or-token>` 直接执行。
 5. 写入、覆盖、移动、删除、权限变更先运行 `doc_ops_wrapper.py preflight`。
 6. 如果返回 `requires_confirmation: true`，必须向使用者展示目标、风险、影响和验证方式，等待明确确认后才能执行 `--confirmed`。
 7. 写入后必须执行 fetch/read 验证。
+
+## 使用者交互规则
+
+需要使用者接入或确认时，必须明确说明：
+
+- 当前操作：读取、创建、覆盖更新、验证或授权。
+- 需要输入：飞书文档链接、`doc_token`、`wiki_node_token`、本地 markdown 文件路径。
+- 授权方式：打开 verification URL，确认 user code；不要提供密码、token、cookie。
+- 风险影响：覆盖、删除、移动、权限类操作必须说明影响范围和可恢复性。
+- 验证方式：执行后如何证明成功，例如 fetch 验证、标题、目标 token、内容 preview。
+
+高风险覆盖更新必须展示：目标 title/token/URL、操作类型、影响范围、可恢复性、执行后验证方式、确认短语 `确认覆盖该 Feishu 文档`。
 
 ## 不支持功能时的处理规则
 
@@ -65,6 +98,7 @@ metadata:
 - 命令、参数、scope、JSON 字段、文件名保持英文；说明和引导使用中文。
 - 不保存或泄露 `app secret`、`access token`、`refresh token`、cookie、密码。
 - 默认优先 `--as user`。
+- wrapper 当前只允许 `--as user`，避免 bot/auto 与 user 授权链路混淆。
 - delete、move、permission transfer、permission delete、batch write、`docs +update --mode overwrite` 等高风险操作必须先确认。
 - 用户只要求查看或读取时，不得升级为写入、覆盖、删除或权限变更。
 

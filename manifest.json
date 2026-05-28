@@ -12,6 +12,7 @@
         "docs"
       ],
       "requires": [
+        "python",
         "node",
         "npx",
         "@larksuite/cli"
