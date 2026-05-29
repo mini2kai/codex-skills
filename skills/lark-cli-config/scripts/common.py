@@ -4,7 +4,7 @@ import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
@@ -391,6 +391,121 @@ def normalize_document_target(target=None, doc=None, wiki_node=None):
     return result
 
 
+def normalize_sheet_target(target=None, spreadsheet_token=None, sheet_id=None):
+    raw = target or spreadsheet_token
+    if not raw:
+        return {
+            "ok": False,
+            "input": None,
+            "message": "缺少飞书表格链接或 spreadsheet_token。",
+            "next_action": "provide_feishu_sheet_url_or_token",
+        }
+
+    text = str(raw).strip()
+    result = {
+        "ok": True,
+        "input": text,
+        "original_url": text if text.startswith(("http://", "https://")) else None,
+        "type": "sheet",
+        "spreadsheet_token": spreadsheet_token if spreadsheet_token else None,
+        "sheet_id": sheet_id,
+        "message": "目标已识别为 Feishu 表格。",
+        "next_action": None,
+    }
+
+    if text.startswith(("http://", "https://")):
+        parsed = urlparse(text)
+        if not FEISHU_DOC_HOST_RE.search(parsed.hostname or ""):
+            result.update({
+                "ok": False,
+                "type": "unknown_url",
+                "message": "链接不是 feishu.cn 或 larksuite.com 域名。",
+                "next_action": "provide_feishu_sheet_url_or_token",
+            })
+            return result
+        parts = [part for part in parsed.path.split("/") if part]
+        token = None
+        for index, part in enumerate(parts):
+            if part in {"sheets", "sheet"} and index + 1 < len(parts):
+                token = parts[index + 1]
+                break
+        if not token:
+            result.update({
+                "ok": False,
+                "type": "unknown_url",
+                "message": "未能从链接中识别 spreadsheet_token。",
+                "next_action": "provide_feishu_sheet_url_or_token",
+            })
+            return result
+        query = parse_qs(parsed.query)
+        result.update({
+            "spreadsheet_token": token,
+            "sheet_id": sheet_id or (query.get("sheet") or [None])[0],
+        })
+        if not result["sheet_id"]:
+            result.update({
+                "ok": False,
+                "message": "链接中缺少 sheet 参数，无法跳过 +info 精准读取。",
+                "next_action": "provide_sheet_id_or_allow_info_fallback",
+            })
+        return result
+
+    result["spreadsheet_token"] = text
+    if not result["sheet_id"]:
+        result.update({
+            "ok": False,
+            "message": "使用 spreadsheet_token 时必须同时提供 --sheet-id。",
+            "next_action": "provide_sheet_id",
+        })
+    return result
+
+
+def sheet_cell_to_text(value):
+    if value is None:
+        return ""
+    if isinstance(value, (str, int, float, bool)):
+        return str(value)
+    if isinstance(value, list):
+        return "".join(sheet_cell_to_text(item) for item in value).strip()
+    if isinstance(value, dict):
+        if isinstance(value.get("text"), str):
+            return value["text"]
+        if isinstance(value.get("link"), str):
+            return value["link"]
+        return " ".join(sheet_cell_to_text(item) for item in value.values()).strip()
+    return str(value)
+
+
+def clean_sheet_values(values, max_cells=20000):
+    rows = []
+    for row in values or []:
+        rows.append([sheet_cell_to_text(cell).strip() for cell in row])
+
+    non_empty_rows = [row for row in rows if any(cell for cell in row)]
+    if not non_empty_rows:
+        return {"matrix": [], "text": "", "row_count": 0, "column_count": 0, "cell_count": 0, "truncated": False}
+
+    width = max(len(row) for row in non_empty_rows)
+    padded = [row + [""] * (width - len(row)) for row in non_empty_rows]
+    keep_columns = [index for index in range(width) if any(row[index] for row in padded)]
+    compact = [[row[index] for index in keep_columns] for row in padded]
+    total_cells = len(compact) * len(keep_columns)
+    truncated = total_cells > max_cells
+    if truncated and keep_columns:
+        max_rows = max(1, max_cells // len(keep_columns))
+        compact = compact[:max_rows]
+        total_cells = len(compact) * len(keep_columns)
+    text = "\n".join("\t".join(row).rstrip() for row in compact)
+    return {
+        "matrix": compact,
+        "text": text,
+        "row_count": len(compact),
+        "column_count": len(keep_columns),
+        "cell_count": total_cells,
+        "truncated": truncated,
+    }
+
+
 def extract_created_doc_reference(text):
     data = parse_json_text(text or "")
 
@@ -434,3 +549,34 @@ def add_common_args(parser):
     parser.add_argument("--as", dest="as_identity", default="user", choices=["user"])
     parser.add_argument("--format", default="pretty")
     return parser
+
+
+def markdown_escape(text):
+    return str(text).replace("|", "\\|").replace("\n", " ")
+
+
+def matrix_to_markdown(matrix):
+    if not matrix:
+        return ""
+    width = max(len(row) for row in matrix)
+    rows = [row + [""] * (width - len(row)) for row in matrix]
+    header = [markdown_escape(cell) or f"Column {index + 1}" for index, cell in enumerate(rows[0])]
+    lines = ["| " + " | ".join(header) + " |", "| " + " | ".join(["---"] * width) + " |"]
+    for row in rows[1:]:
+        lines.append("| " + " | ".join(markdown_escape(cell) for cell in row) + " |")
+    return "\n".join(lines)
+
+
+def clean_doc_text(text):
+    if not text:
+        return ""
+    lines = []
+    previous_blank = False
+    for raw_line in str(text).replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        line = raw_line.rstrip()
+        blank = not line.strip()
+        if blank and previous_blank:
+            continue
+        lines.append(line)
+        previous_blank = blank
+    return "\n".join(lines).strip()

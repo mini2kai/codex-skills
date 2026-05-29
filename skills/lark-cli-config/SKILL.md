@@ -30,6 +30,8 @@ metadata:
 - 引导登录：`python scripts/auth_manager.py login --domain docs,wiki,drive`
 - 登出：`python scripts/auth_manager.py logout`
 - 文档操作：`python scripts/doc_ops_wrapper.py preflight|execute --operation <operation> --target <url-or-token> ...`
+- 文档快读：`python scripts/doc_ops_wrapper.py execute --operation docs_fetch --target <doc-url> --include-text`
+- 表格只读：`python scripts/sheet_ops_wrapper.py preflight|execute --operation sheets_read --target <sheet-url> --include-text`
 - 本地自测：`python scripts/self_test.py`
 
 所有脚本输出 JSON。Agent 应读取 JSON 的 `ok`、`stage`、`target`、`diagnostics`、`next_action`、`requires_confirmation`、`risk`、`message` 字段决定下一步。
@@ -47,9 +49,38 @@ metadata:
 
 稳定 operation：
 
-- `docs_fetch`：读取文档。低风险，不需要确认。
+- `docs_fetch`：读取文档。低风险，不需要确认；分析长文档时使用 `--include-text` 输出清洗全文。
 - `docs_create`：从本地 UTF-8 markdown 创建文档。创建后必须解析新文档并 fetch 验证。
 - `docs_update_overwrite`：用本地 UTF-8 markdown 覆盖目标文档正文。高风险，必须先 preflight，再等待明确确认后 execute `--confirmed`。
+
+## 文档只读快速链路
+
+当使用者只要求读取或分析 Feishu document/docx/wiki 内容时，走低风险快读：
+
+1. 从 URL 直接识别 `doc_token` 或 `wiki_node_token`。
+2. 直接执行 `docs +fetch`，不进入覆盖/写入 preflight。
+3. 使用 `--include-text` 输出清洗后的 `cleaned_text`，用于完整分析；`--include-preview` 只用于短预览。
+4. 只读失败时再进入授权、scope 或目标诊断。
+
+稳定 operation：
+
+- `docs_fetch`：只读读取目标文档，低风险，不需要确认。
+
+## 表格只读快速链路
+
+当使用者提供 Feishu spreadsheet URL 且 URL 中包含 `sheet=` 参数时，优先走快速链路：
+
+1. 从 URL 直接提取 `spreadsheet_token` 和 `sheet_id`。
+2. 默认跳过 `sheets +info`，直接执行 `sheets +read`。
+3. 默认一次性读取 `A1:AZ500`，不要因为几百行表格拆成多次网络请求。
+4. 读取后在本地清洗：删除全空行、全空列，富文本 mention 转普通文本，移除 `_notice`、revision、样式和 merge 噪声。
+5. 给大模型总结时优先使用 `cleaned_text`，不要把 CLI 原始 JSON 直接放入上下文。
+
+只有以下情况才调用 `sheets +info`：URL 没有 `sheet=`、使用者要求列出所有 sheet、直接读取失败需要诊断、或明确需要 sheet 标题/行列数。
+
+稳定 operation：
+
+- `sheets_read`：只读读取目标 sheet，低风险，不需要确认。
 
 ## 规则导航
 

@@ -3,6 +3,7 @@ import argparse
 from common import (
     add_common_args,
     check_auth_status,
+    clean_doc_text,
     ensure_utf8_file,
     extract_created_doc_reference,
     infer_title_from_fetch_output,
@@ -99,7 +100,8 @@ def execute_docs_fetch(args):
     target = resolve_target_or_exit(args, "execute")
     auth = require_auth(args.as_identity)
     result = fetch_doc(target["doc_arg"], args.as_identity, args.format)
-    title = infer_title_from_fetch_output(result.get("stdout", ""))
+    cleaned_text = clean_doc_text(result.get("stdout", "")) if result["ok"] else ""
+    title = infer_title_from_fetch_output(cleaned_text or result.get("stdout", ""))
     json_exit({
         "ok": result["ok"],
         "stage": "execute",
@@ -110,8 +112,10 @@ def execute_docs_fetch(args):
         "result": {
             "verified": result["ok"],
             "title": title,
-            "content_preview": result.get("stdout", "")[:1200] if args.include_preview else None,
+            "content_preview": cleaned_text[:1200] if args.include_preview else None,
+            "full_text_chars": len(cleaned_text),
         },
+        "cleaned_text": cleaned_text[:args.max_text_chars] if args.include_text else None,
         "diagnostics": result.get("diagnostics"),
         "message": "文档读取成功" if result["ok"] else error_message(result, "文档读取失败"),
         "next_action": None if result["ok"] else "inspect_docs_fetch_error",
@@ -274,6 +278,8 @@ def build_parser():
     parser.add_argument("--markdown")
     parser.add_argument("--confirmed", action="store_true")
     parser.add_argument("--include-preview", action="store_true")
+    parser.add_argument("--include-text", action="store_true")
+    parser.add_argument("--max-text-chars", type=int, default=30000)
     add_common_args(parser)
     return parser
 

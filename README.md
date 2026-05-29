@@ -18,6 +18,7 @@ https://github.com/mini2kai/codex-skills
 irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill lark-cli-config
 ```
 
+
 安装 `postgres-query`：
 
 ```powershell
@@ -64,7 +65,7 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 
 | Skill | 说明 |
 | --- | --- |
-| `lark-cli-config` | 分步引导 lark-cli 授权配置，封装 Feishu document/wiki/sheet 安全操作。 |
+| `lark-cli-config` | 分步引导 lark-cli 授权配置，封装 Feishu document/wiki/sheet 安全操作；sheet/doc 只读默认快速读取并本地清洗。 |
 | `postgres-query` | 引导式 PostgreSQL 临时连接和本机多 profile 配置、只读查询、表结构查看和查询计划分析；风险操作只生成 SQL 不执行。 |
 | `codex-skill-dev` | 中文 Codex skill 开发、验证、仓库同步和 GitHub 发布流程；沉淀 Windows/PowerShell、编码、校验和常见错误避坑。 |
 | `server-docker-logs-readonly` | 本地脚本白名单模式按本地配置查询服务器绝对目录日志，并保留 Docker 日志读取作为备用方案。 |
@@ -77,6 +78,7 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 ```powershell
 irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill lark-cli-config
 ```
+
 
 ### 安装 `postgres-query`
 

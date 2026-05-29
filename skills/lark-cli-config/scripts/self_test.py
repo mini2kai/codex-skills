@@ -1,4 +1,11 @@
-from common import classify_cli_error, extract_created_doc_reference, json_exit, normalize_document_target
+from common import (
+    classify_cli_error,
+    clean_sheet_values,
+    extract_created_doc_reference,
+    json_exit,
+    normalize_document_target,
+    normalize_sheet_target,
+)
 
 
 def check(name, ok, detail=None):
@@ -25,6 +32,20 @@ def main():
 
     created = extract_created_doc_reference('{"url":"https://example.feishu.cn/docx/CREATEDTOKEN"}')
     checks.append(check("created_doc_reference_extracted", created.get("ok") and created.get("doc") == "CREATEDTOKEN", created))
+
+    sheet_url = normalize_sheet_target("https://example.feishu.cn/sheets/SHEETTOKEN123?sheet=abcDEF")
+    checks.append(check("sheet_url_resolves", sheet_url.get("ok") and sheet_url.get("spreadsheet_token") == "SHEETTOKEN123" and sheet_url.get("sheet_id") == "abcDEF", sheet_url))
+
+    sheet_missing_id = normalize_sheet_target("https://example.feishu.cn/sheets/SHEETTOKEN123")
+    checks.append(check("sheet_missing_id_requires_fallback", not sheet_missing_id.get("ok") and sheet_missing_id.get("next_action") == "provide_sheet_id_or_allow_info_fallback", sheet_missing_id))
+
+    cleaned = clean_sheet_values([
+        [None, "", None],
+        ["页面名称", [{"text": "投产明细", "type": "text"}], None],
+        [None, None, None],
+        ["按钮", "提交", "导出"],
+    ])
+    checks.append(check("sheet_values_cleaned", cleaned["row_count"] == 2 and cleaned["column_count"] == 3 and "投产明细" in cleaned["text"], cleaned))
 
     ok = all(item["ok"] for item in checks)
     json_exit({
