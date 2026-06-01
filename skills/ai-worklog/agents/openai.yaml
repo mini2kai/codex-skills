@@ -1,0 +1,3 @@
+display_name: AI Worklog
+short_description: 统计 Codex/Claude AI 协作日报和报工耗时
+default_prompt: $ai-worklog 统计今天我使用 AI 完成的工作内容，并输出表格日报。

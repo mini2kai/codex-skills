@@ -89,6 +89,24 @@
       "requires": [
         "none"
       ]
+    },
+    "ai-worklog": {
+      "path": "skills/ai-worklog",
+      "description": "跨机器统计 Codex、Claude Code/CLI 等 AI 协作记录，生成工作日报、报工摘要和耗时表。",
+      "tags": [
+        "ai",
+        "worklog",
+        "codex",
+        "claude",
+        "daily-report",
+        "timesheet",
+        "git"
+      ],
+      "requires": [
+        "python",
+        "git optional",
+        "openpyxl optional for --excel"
+      ]
     }
   }
 }

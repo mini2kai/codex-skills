@@ -43,6 +43,12 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill work-orchestrator
 ```
 
+安装 `ai-worklog`：
+
+```powershell
+irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog
+```
+
 安装结果：
 
 ```text
@@ -70,6 +76,7 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 | `codex-skill-dev` | 中文 Codex skill 开发、验证、仓库同步和 GitHub 发布流程；沉淀 Windows/PowerShell、编码、校验和常见错误避坑。 |
 | `server-docker-logs-readonly` | 本地脚本白名单模式按本地配置查询服务器绝对目录日志，并保留 Docker 日志读取作为备用方案。 |
 | `work-orchestrator` | 手动触发的轻量总控编排 Skill，用于先分析不修改、证据收集、方案设计、验证计划，并按能力灵活编排专业 Skill。 |
+| `ai-worklog` | 跨机器统计 Codex、Claude Code/CLI 等 AI 协作记录，生成工作日报、报工摘要和耗时表。 |
 
 ## 常用命令
 
@@ -118,6 +125,22 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 ```
 
 `work-orchestrator` 是手动触发的轻量总控编排 Skill。建议通过 `$work-orchestrator` 或 UI 手动选择启用，适合“先分析不修改”“先定位再出方案”的工作流，用于先完成证据收集、影响范围评估、方案设计和验证计划，并根据当前环境可用 Skill 的能力动态编排。它不默认参与普通开发请求，也不在分析阶段直接修改代码或配置。
+
+### 安装 `ai-worklog`
+
+```powershell
+irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog
+```
+
+
+示例：
+
+```powershell
+python .\ai-worklog\scripts\ai_worklog_collect.py --date today --format markdown
+python .\ai-worklog\scripts\ai_worklog_collect.py --date 2026-05-29 --root C:\work --format markdown
+python .\ai-worklog\scripts\ai_worklog_collect.py --date today --preview
+python .\ai-worklog\scripts\ai_worklog_collect.py --date today --from-preview .\ai-worklog\data\ai_worklog_preview.xlsx --excel --format markdown
+```
 
 `codex-skill-dev` 用于开发、验证、同步和发布本仓库里的 skill，包含 Windows/PowerShell、UTF-8 编码、manifest/README 同步和 GitHub 发布避坑流程。
 
@@ -243,6 +266,7 @@ python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-gi
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/codex-skill-dev
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/server-docker-logs-readonly
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/work-orchestrator
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/ai-worklog
 ```
 
 ## 本地仓库安装
@@ -281,6 +305,11 @@ codex-skills/
 │   ├── work-orchestrator/
 │   │   ├── SKILL.md
 │   │   └── agents/
+│   ├── ai-worklog/
+│   │   ├── SKILL.md
+│   │   ├── agents/
+│   │   ├── references/
+│   │   └── scripts/
 │   └── codex-skill-dev/
 │       ├── SKILL.md
 │       ├── agents/

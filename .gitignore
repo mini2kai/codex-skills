@@ -22,3 +22,7 @@ custom_script/
 
 # Local server-docker-logs-readonly audit logs
 skills/server-docker-logs-readonly/logs/
+
+# Local ai-worklog Excel ledger
+skills/ai-worklog/data/*.xlsx
+skills/ai-worklog/data/*.xlsm
