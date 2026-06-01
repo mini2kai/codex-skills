@@ -707,6 +707,104 @@ def read_confirmed_preview(path: Path) -> list[dict[str, Any]]:
         })
     return rows
 
+
+def task_type_label(row: dict[str, Any]) -> str:
+    text = f"{row.get('request', '')} {row.get('result', '')}".lower()
+    if any(k in text for k in ["bug", "fix", "commit", "mapper", cn(r"\u4fee\u590d"), cn(r"\u63d0\u4ea4"), cn(r"\u53e3\u5f84")]):
+        return cn(r"\u4ee3\u7801\u5f00\u53d1 / Bug \u4fee\u590d")
+    if any(k in text for k in ["sql", "postgres", "pg", cn(r"\u6570\u636e\u5e93"), cn(r"\u67e5\u8be2"), cn(r"\u9a8c\u8bc1")]):
+        return cn(r"SQL/\u6570\u636e\u9a8c\u8bc1")
+    if any(k in text for k in ["skill", "script", "tool", cn(r"\u811a\u672c"), cn(r"\u5de5\u5177"), cn(r"\u81ea\u52a8\u5316")]):
+        return cn(r"\u5de5\u5177/skill \u5efa\u8bbe")
+    if any(k in text for k in ["sheet", "excel", "doc", "lark", cn(r"\u98de\u4e66"), cn(r"\u8868\u683c"), cn(r"\u6587\u6863")]):
+        return cn(r"\u6587\u6863/\u8868\u683c\u5206\u6790")
+    if any(k in text for k in [cn(r"\u6392\u67e5"), cn(r"\u5206\u6790"), cn(r"\u94fe\u8def")]):
+        return cn(r"\u95ee\u9898\u6392\u67e5")
+    return cn(r"\u65e5\u5e38\u534f\u4f5c")
+
+
+def public_task_phrase(row: dict[str, Any]) -> str:
+    request = strip_public_noise(row.get("request", ""))
+    result = strip_public_noise(row.get("result", ""))
+    text = f"{request} {result}".lower()
+    if any(k in text for k in ["skill", "script", "tool", cn(r"\u811a\u672c"), cn(r"\u5de5\u5177"), cn(r"\u81ea\u52a8\u5316")]):
+        return cn(r"\u4f18\u5316\u81ea\u52a8\u5316\u5de5\u5177\u548c Skill \u5de5\u4f5c\u6d41\uff0c\u63d0\u5347\u8d44\u6599\u8bfb\u53d6\u3001\u5904\u7406\u548c\u65e5\u62a5\u5f52\u6863\u6548\u7387")
+    elif any(k in text for k in ["bug", "fix", cn(r"\u4fee\u590d"), cn(r"\u9519\u4f4d"), cn(r"\u5f02\u5e38")]):
+        return cn(r"\u5b8c\u6210\u4e1a\u52a1\u6570\u636e\u5c55\u793a\u548c\u5bfc\u51fa\u95ee\u9898\u4fee\u590d\uff0c\u4fdd\u969c\u524d\u540e\u53f0\u6570\u636e\u4e00\u81f4\u6027")
+    elif any(k in text for k in ["sql", "postgres", "pg", cn(r"\u6570\u636e\u5e93"), cn(r"\u67e5\u8be2"), cn(r"\u9a8c\u8bc1")]):
+        return cn(r"\u5b8c\u6210\u6570\u636e\u6838\u5bf9\u3001SQL \u9a8c\u8bc1\u548c\u5f02\u5e38\u53e3\u5f84\u5206\u6790\uff0c\u4e3a\u540e\u7eed\u4fee\u590d\u63d0\u4f9b\u4f9d\u636e")
+    elif any(k in text for k in ["sheet", "excel", "doc", "lark", cn(r"\u98de\u4e66"), cn(r"\u8868\u683c"), cn(r"\u6587\u6863")]):
+        return cn(r"\u68b3\u7406\u6587\u6863\u548c\u8868\u683c\u8d44\u6599\uff0c\u5b8c\u6210\u5185\u5bb9\u6838\u5bf9\u3001\u8bfb\u53d6\u548c\u53ef\u7528\u6027\u5224\u65ad")
+    elif any(k in text for k in [cn(r"\u6392\u67e5"), cn(r"\u5206\u6790"), cn(r"\u94fe\u8def")]):
+        return cn(r"\u68b3\u7406\u4e1a\u52a1\u548c\u7cfb\u7edf\u5904\u7406\u94fe\u8def\uff0c\u660e\u786e\u63a5\u53e3\u3001\u6570\u636e\u6e90\u548c\u6392\u67e5\u65b9\u5411")
+    return cn(r"\u63a8\u8fdb\u65e5\u5e38\u534f\u4f5c\u4e8b\u9879\u6574\u7406\u548c\u4ea4\u4ed8\u8ddf\u8fdb")
+
+
+def strip_public_noise(text: Any) -> str:
+    value = shorten(text, 120)
+    value = re.sub(r"https?://\S+", cn(r"\u76f8\u5173\u94fe\u63a5"), value)
+    value = re.sub(r"[A-Za-z]:\\[^\s]+", cn(r"\u672c\u5730\u8def\u5f84"), value)
+    return value
+
+
+def count_git_commits(git_rows: list[dict[str, Any]]) -> int:
+    total = 0
+    for row in git_rows:
+        commits = str(row.get("commits") or "").strip()
+        if not commits or commits.startswith("git_error"):
+            continue
+        total += len([line for line in commits.splitlines() if line.strip()])
+    return total
+
+
+def build_public_report_text(date_value: str, conversations: list[dict[str, Any]], git_rows: list[dict[str, Any]]) -> str:
+    if not conversations:
+        return date_value + cn(r"\u672a\u53d1\u73b0\u53ef\u7eb3\u5165\u62a5\u5de5\u7684 AI \u534f\u4f5c\u8bb0\u5f55\u3002")
+    categories: dict[str, int] = {}
+    projects: list[str] = []
+    for row in conversations:
+        label = task_type_label(row)
+        categories[label] = categories.get(label, 0) + 1
+        project = Path(str(row.get("cwd") or "")).name.strip()
+        if project and project not in projects:
+            projects.append(project)
+    top_phrases = []
+    seen = set()
+    for row in conversations:
+        phrase = public_task_phrase(row)
+        key = phrase[:50]
+        if key in seen:
+            continue
+        seen.add(key)
+        top_phrases.append(phrase)
+        if len(top_phrases) >= 6:
+            break
+    total_work = round(sum(float(row.get("estimated_work_minutes") or 0) for row in conversations), 1)
+    hours = round(total_work / 60, 1)
+    category_text = cn(r"\u3001").join(f"{name}{count}" + cn(r"\u9879") for name, count in sorted(categories.items(), key=lambda item: item[1], reverse=True)[:4])
+    project_text = cn(r"\u3001").join(projects[:5]) if projects else cn(r"\u591a\u4e2a\u9879\u76ee")
+    phrase_text = cn(r"\uff1b").join(top_phrases)
+    commit_count = count_git_commits(git_rows)
+    commit_text = ""
+    if commit_count:
+        commit_text = cn(r"\u5e76\u5b8c\u6210 ") + str(commit_count) + cn(r" \u4e2a Git \u63d0\u4ea4\u6216\u4ee3\u7801\u8bc1\u636e\u5f52\u6863\uff0c\u4fbf\u4e8e\u540e\u7eed\u8ffd\u6eaf\u3002")
+    return (
+        date_value
+        + cn(r"\u5b8c\u6210 ")
+        + project_text
+        + cn(r" \u76f8\u5173\u5de5\u4f5c\uff0c\u5171\u5f52\u6863 ")
+        + str(len(conversations))
+        + cn(r" \u6761\u7ecf\u786e\u8ba4\u7684\u5de5\u4f5c\u7d20\u6750\uff0c\u8986\u76d6")
+        + category_text
+        + cn(r"\u3002\u4e3b\u8981\u4ea4\u4ed8\u5305\u62ec\uff1a")
+        + phrase_text
+        + cn(r"\u3002")
+        + commit_text
+        + cn(r"\u5efa\u8bae\u62a5\u5de5\u5de5\u65f6\u7ea6 ")
+        + str(hours)
+        + cn(r" \u5c0f\u65f6\uff0c\u5177\u4f53\u53ef\u6309\u5355\u4f4d\u62a5\u5de5\u53e3\u5f84\u8c03\u6574\u3002")
+    )
+
 def write_excel(data: dict[str, Any], output_path: Path, mode: str = "upsert") -> dict[str, Any]:
     try:
         from openpyxl import Workbook, load_workbook
@@ -868,7 +966,7 @@ def write_excel(data: dict[str, Any], output_path: Path, mode: str = "upsert") -
 
     report_text = report.get("report_text") or ""
     if not report_text:
-        report_text = f"{date_value} AI worklog: {len(conversations)} conversations, {len(git_rows)} git repos."
+        report_text = build_public_report_text(date_value, conversations, git_rows)
     ws = sheet(cn(r"\u53ef\u76f4\u63a5\u62a5\u5de5\u7248\u672c"), [cn(r"\u62a5\u5de5\u5185\u5bb9")])
     append_rows(ws, [[report_text]])
 
