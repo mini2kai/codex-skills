@@ -53,6 +53,10 @@ def in_day(ts: dt.datetime | None, day: dt.date) -> bool:
     return bool(ts and ts.astimezone().date() == day)
 
 
+def after_day(ts: dt.datetime | None, day: dt.date) -> bool:
+    return bool(ts and ts.astimezone().date() > day)
+
+
 def read_jsonl(path: Path):
     try:
         with path.open("r", encoding="utf-8") as handle:
@@ -100,6 +104,12 @@ def collect_codex(day: dt.date) -> tuple[list[dict[str, Any]], list[Path], set[P
             payload = obj.get("payload") or {}
             typ = obj.get("type")
             ptyp = payload.get("type")
+            if current and after_day(ts, day):
+                rows.append(finish_row(current, last_ts, last_agent, path))
+                current = None
+                last_agent = ""
+                last_ts = None
+                continue
             if typ == "event_msg" and ptyp == "user_message" and in_day(ts, day):
                 if current:
                     rows.append(finish_row(current, last_ts, last_agent, path))
@@ -133,7 +143,12 @@ def collect_codex(day: dt.date) -> tuple[list[dict[str, Any]], list[Path], set[P
 
 
 def finish_row(current: dict[str, Any], end: dt.datetime | None, result: str, path: Path) -> dict[str, Any]:
-    current["end"] = end or current.get("start")
+    start = current.get("start")
+    resolved_end = end or start
+    if isinstance(start, dt.datetime) and isinstance(resolved_end, dt.datetime):
+        if resolved_end.astimezone().date() != start.astimezone().date() or resolved_end < start:
+            resolved_end = start
+    current["end"] = resolved_end
     current["result"] = result or current.get("result") or "未提取到最终回复"
     current["evidence"] = str(path)
     return current
@@ -692,8 +707,16 @@ def read_confirmed_preview(path: Path) -> list[dict[str, Any]]:
         date_text = str(ws.cell(row_idx, cols[cn(r"\u65e5\u671f")]).value or "")
         time_text = str(ws.cell(row_idx, cols[cn(r"\u65f6\u95f4\u6bb5")]).value or "")
         start_time, end_time = (time_text.split("-", 1) + [""])[:2] if "-" in time_text else ("", "")
+        crosses_midnight = bool(start_time and end_time and end_time < start_time)
+        if crosses_midnight:
+            end_time = start_time
         def cell(name: str) -> Any:
             return ws.cell(row_idx, cols[name]).value if name in cols else ""
+        active_minutes = float(cell(cn(r"AI\u6d3b\u8dc3\u8017\u65f6(\u5206\u949f)")) or 0)
+        estimated_minutes = float(cell(cn(r"\u4f30\u7b97\u771f\u5b9e\u5de5\u4f5c\u8017\u65f6(\u5206\u949f)")) or 0)
+        if crosses_midnight:
+            active_minutes = 0.0
+            estimated_minutes = 0.0
         rows.append({
             "tool": cell(cn(r"\u6765\u6e90\u5de5\u5177")),
             "start": f"{date_text} {start_time}:00" if start_time else date_text,
@@ -702,8 +725,8 @@ def read_confirmed_preview(path: Path) -> list[dict[str, Any]]:
             "result": cell(cn(r"AI\u5904\u7406\u6458\u8981")),
             "cwd": cell(cn(r"\u6d89\u53ca\u9879\u76ee")),
             "evidence": cell(cn(r"\u8bc1\u636e")),
-            "ai_active_minutes": float(cell(cn(r"AI\u6d3b\u8dc3\u8017\u65f6(\u5206\u949f)")) or 0),
-            "estimated_work_minutes": float(cell(cn(r"\u4f30\u7b97\u771f\u5b9e\u5de5\u4f5c\u8017\u65f6(\u5206\u949f)")) or 0),
+            "ai_active_minutes": active_minutes,
+            "estimated_work_minutes": estimated_minutes,
         })
     return rows
 
