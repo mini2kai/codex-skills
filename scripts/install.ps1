@@ -302,6 +302,32 @@ function Copy-CodexSkillDirectory {
     }
 }
 
+function Get-CodexLockedFiles {
+    param([Parameter(Mandatory = $true)][string]$Root)
+
+    $locked = New-Object System.Collections.Generic.List[string]
+    if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
+        return $locked
+    }
+
+    foreach ($file in (Get-ChildItem -LiteralPath $Root -File -Recurse -Force)) {
+        $stream = $null
+        try {
+            $stream = [System.IO.File]::Open($file.FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
+        }
+        catch {
+            $locked.Add((Get-CodexRelativePath -Base $Root -Path $file.FullName)) | Out-Null
+        }
+        finally {
+            if ($null -ne $stream) {
+                $stream.Dispose()
+            }
+        }
+    }
+
+    return $locked
+}
+
 function Assert-CodexSkillName {
     param([Parameter(Mandatory = $true)][string]$Name)
 
@@ -519,6 +545,11 @@ function Install-CodexSkill {
 
             $backupDest = $null
             if (Test-Path -LiteralPath $dest) {
+                $lockedFiles = @(Get-CodexLockedFiles -Root $dest)
+                if ($lockedFiles.Count -gt 0) {
+                    throw "覆盖安装前发现旧 skill 文件正在被占用，请先关闭 Excel/WPS/编辑器后重试：$($lockedFiles -join ', ')"
+                }
+
                 New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
                 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
                 $backupDest = Join-Path $backupRoot "$Skill-$timestamp"
