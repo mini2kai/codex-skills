@@ -740,6 +740,49 @@ def public_task_phrase(row: dict[str, Any]) -> str:
     return cn(r"\u63a8\u8fdb\u65e5\u5e38\u534f\u4f5c\u4e8b\u9879\u6574\u7406\u548c\u4ea4\u4ed8\u8ddf\u8fdb")
 
 
+def public_project_label(row: dict[str, Any]) -> str:
+    project = Path(str(row.get("cwd") or "")).name.strip()
+    return project or cn(r"\u672a\u5f52\u5c5e\u9879\u76ee")
+
+
+def public_feature_label(row: dict[str, Any]) -> str:
+    text = f"{row.get('request', '')} {row.get('result', '')}".lower()
+    if any(k in text for k in ["ai-worklog", "worklog", "preview", "codex", "claude", "session", cn(r"\u62a5\u5de5"), cn(r"\u65e5\u62a5"), cn(r"AI \u534f\u4f5c"), cn(r"\u9690\u79c1")]):
+        return cn(r"AI \u5de5\u4f5c\u65e5\u62a5 / \u62a5\u5de5\u5de5\u5177")
+    if any(k in text for k in ["install-codexskill", "install.ps1", "force", "backup", cn(r"\u5b89\u88c5"), cn(r"\u5907\u4efd"), cn(r"\u914d\u7f6e\u6587\u4ef6")]):
+        return cn(r"Skill \u5b89\u88c5\u4e0e\u672c\u5730\u914d\u7f6e\u4fdd\u7559")
+    if any(k in text for k in ["lark", cn(r"\u98de\u4e66"), "im:", cn(r"\u804a\u5929\u8bb0\u5f55")]):
+        return cn(r"\u98de\u4e66\u6388\u6743\u4e0e\u6570\u636e\u8bfb\u53d6")
+    if any(k in text for k in ["selection-detail-task-export", "export-all-task", cn(r"\u63a8\u9001\u65e5\u5fd7"), cn(r"\u5bfc\u51fa")]):
+        return cn(r"OTB \u63a8\u9001\u65e5\u5fd7 / \u5bfc\u51fa\u80fd\u529b")
+    if any(k in text for k in ["channel-otb", "channel_otb", cn(r"\u6e20\u9053otb"), "store-type", "region", cn(r"\u6e29\u533a"), cn(r"\u7ba1\u7406\u533a\u57df"), cn(r"\u95e8\u5e97")]):
+        return cn(r"\u6e20\u9053 OTB \u6570\u636e\u53e3\u5f84")
+    if any(k in text for k in ["signature_direct_sales", cn(r"\u7b7e\u6279\u8868"), cn(r"\u4e70\u8d27\u5e97\u94fa\u6570")]):
+        return cn(r"OTB \u7b7e\u6279\u8868\u6570\u636e\u53e3\u5f84")
+    if any(k in text for k in ["sql", "uat", "dev", "dazy", cn(r"\u6570\u636e\u5e93"), cn(r"\u8bc1\u660e"), cn(r"\u6838\u5bf9")]):
+        return cn(r"\u6570\u636e\u6838\u5bf9\u4e0e SQL \u8bc1\u660e")
+    return task_type_label(row)
+
+
+def public_delivery_point(row: dict[str, Any]) -> str:
+    text = f"{row.get('request', '')} {row.get('result', '')}".lower()
+    if any(k in text for k in ["ai-worklog", "worklog", "codex", "claude", "session", cn(r"\u62a5\u5de5"), cn(r"\u65e5\u62a5"), cn(r"AI \u534f\u4f5c")]):
+        return cn(r"\u5b8c\u6210 AI \u534f\u4f5c\u8bb0\u5f55\u7684\u9884\u89c8\u786e\u8ba4\u3001\u9690\u79c1\u8fc7\u6ee4\u3001Excel \u53f0\u8d26\u548c\u62a5\u5de5\u6458\u8981\u6d41\u7a0b\u68b3\u7406\u3002")
+    if any(k in text for k in ["install-codexskill", "install.ps1", "force", "backup", cn(r"\u5907\u4efd"), cn(r"\u914d\u7f6e\u6587\u4ef6")]):
+        return cn(r"\u4f18\u5316 skill \u8986\u76d6\u5b89\u88c5\u903b\u8f91\uff0c\u652f\u6301\u65e7\u7248\u5b8c\u6574\u5907\u4efd\u3001\u672c\u5730\u914d\u7f6e\u7ed3\u6784\u6821\u9a8c\u548c\u540c\u7ed3\u6784\u81ea\u52a8\u4fdd\u7559\u3002")
+    if any(k in text for k in ["lark", cn(r"\u98de\u4e66"), "im:"]):
+        return cn(r"\u68b3\u7406\u98de\u4e66\u804a\u5929\u8bb0\u5f55\u8bfb\u53d6\u53ef\u884c\u6027\u548c lark-cli \u6743\u9650\u8981\u6c42\uff0c\u660e\u786e\u5f53\u524d\u6388\u6743\u7f3a\u53e3\u3002")
+    if any(k in text for k in ["selection-detail-task-export", "export-all-task", cn(r"\u63a8\u9001\u65e5\u5fd7"), cn(r"\u5bfc\u51fa")]):
+        return cn(r"\u5206\u6790\u63a8\u9001\u65e5\u5fd7\u5217\u8868\u94fe\u8def\uff0c\u8865\u5145\u5168\u91cf\u5bfc\u51fa\u63a5\u53e3\u4e0e\u201c\u63a8\u9001\u65e5\u5fd7\u5bfc\u51fa\u201d\u9875\u9762\u914d\u7f6e SQL\u3002")
+    if any(k in text for k in ["channel-otb", "channel_otb", cn(r"\u6e20\u9053otb"), "store-type", "region", cn(r"\u6e29\u533a"), cn(r"\u7ba1\u7406\u533a\u57df")]):
+        return cn(r"\u5bf9\u9f50\u6e20\u9053 OTB \u95e8\u5e97\u6709\u6548\u6027\u3001\u95ed\u5e97/\u96f6\u552e\u76ee\u6807\u3001\u5fae\u5546\u57ce/\u603b\u90e8\u4ed3\u5e93\u548c zero-row \u8fc7\u6ee4\u53e3\u5f84\u3002")
+    if any(k in text for k in ["signature_direct_sales", cn(r"\u7b7e\u6279\u8868"), cn(r"\u4e70\u8d27\u5e97\u94fa\u6570")]):
+        return cn(r"\u5206\u6790 OTB \u7b7e\u6279\u8868\u4e0e\u6e20\u9053 OTB \u9875\u9762\u5e97\u94fa\u6570\u5dee\u5f02\uff0c\u660e\u786e\u6765\u6e90\u8868\u548c\u516c\u5f0f\u53e3\u5f84\u3002")
+    if any(k in text for k in ["sql", "uat", "dev", "dazy", cn(r"\u6570\u636e\u5e93"), cn(r"\u8bc1\u660e"), cn(r"\u6838\u5bf9")]):
+        return cn(r"\u63d0\u4f9b\u5dee\u5f02\u6570\u636e\u6838\u5bf9 SQL\uff0c\u652f\u6301\u6309\u95e8\u5e97\u7f16\u7801\u7cbe\u786e\u5b9a\u4f4d\u53c2\u6570\u4e0d\u4e00\u81f4\u7684\u660e\u7ec6\u884c\u3002")
+    return public_task_phrase(row)
+
+
 def strip_public_noise(text: Any) -> str:
     value = shorten(text, 120)
     value = re.sub(r"https?://\S+", cn(r"\u76f8\u5173\u94fe\u63a5"), value)
@@ -804,6 +847,58 @@ def build_public_report_text(date_value: str, conversations: list[dict[str, Any]
         + str(hours)
         + cn(r" \u5c0f\u65f6\uff0c\u5177\u4f53\u53ef\u6309\u5355\u4f4d\u62a5\u5de5\u53e3\u5f84\u8c03\u6574\u3002")
     )
+
+
+def build_public_report_rows(date_value: str, conversations: list[dict[str, Any]], git_rows: list[dict[str, Any]]) -> list[list[Any]]:
+    if not conversations:
+        return [[cn(r"\u672a\u53d1\u73b0\u53ef\u7eb3\u5165\u62a5\u5de5\u7684 AI \u534f\u4f5c\u8bb0\u5f55"), "", "", 0, "", ""]]
+
+    grouped: dict[tuple[str, str], dict[str, Any]] = {}
+    project_order: list[str] = []
+    for row in conversations:
+        project = public_project_label(row)
+        feature = public_feature_label(row)
+        if feature in {cn(r"\u65e5\u5e38\u534f\u4f5c"), cn(r"\u4ee3\u7801\u5f00\u53d1 / Bug \u4fee\u590d")} and float(row.get("estimated_work_minutes") or 0) < 1:
+            feature = cn(r"AI \u5de5\u4f5c\u65e5\u62a5 / \u62a5\u5de5\u5de5\u5177")
+        if project not in project_order:
+            project_order.append(project)
+        key = (project, feature)
+        item = grouped.setdefault(key, {"count": 0, "minutes": 0.0, "points": [], "evidence": set()})
+        item["count"] += 1
+        item["minutes"] += float(row.get("estimated_work_minutes") or 0)
+        point = public_delivery_point(row)
+        if point and point not in item["points"]:
+            item["points"].append(point)
+        evidence = evidence_file_name(row.get("evidence", ""))
+        if evidence:
+            item["evidence"].add(evidence)
+
+    commit_count = count_git_commits(git_rows)
+    rows: list[list[Any]] = []
+    index = 1
+    for project in project_order:
+        feature_items = [(feature, grouped[(project, feature)]) for feature in sorted([f for p, f in grouped if p == project], key=lambda f: grouped[(project, f)]["minutes"], reverse=True)]
+        for feature, item in feature_items:
+            points = item["points"][:3]
+            content_lines = [f"{idx}. {point}" for idx, point in enumerate(points, 1)]
+            if len(item["points"]) > 3:
+                content_lines.append(cn(r"\u5176\u4ed6\u76f8\u5173\u6c9f\u901a\u3001\u9a8c\u8bc1\u548c\u8ddf\u8fdb\u4e8b\u9879\u5df2\u5408\u5e76\u5f52\u6863\u3002"))
+            evidence_parts = [cn(r"\u5f52\u5e76 AI \u534f\u4f5c\u8bb0\u5f55 ") + str(item["count"]) + cn(r" \u6761")]
+            if item["evidence"]:
+                evidence_parts.append(cn(r"\u4f1a\u8bdd\u8bc1\u636e ") + str(len(item["evidence"])) + cn(r" \u4efd"))
+            if commit_count and project in {Path(str(row.get("repo") or "")).name for row in git_rows}:
+                evidence_parts.append(cn(r"\u542b Git \u63d0\u4ea4\u8bc1\u636e"))
+            rows.append([
+                index,
+                project,
+                feature,
+                "\n".join(content_lines),
+                item["count"],
+                cn(r"\u7ea6 ") + str(round(item["minutes"] / 60, 1)) + cn(r" \u5c0f\u65f6"),
+                cn(r"\uff1b").join(evidence_parts),
+            ])
+            index += 1
+    return rows
 
 def write_excel(data: dict[str, Any], output_path: Path, mode: str = "upsert") -> dict[str, Any]:
     try:
@@ -964,11 +1059,25 @@ def write_excel(data: dict[str, Any], output_path: Path, mode: str = "upsert") -
     ws = sheet(cn(r"\u4eca\u65e5\u5b8c\u6210\u4e8b\u9879\u6458\u8981"), [cn(r"\u5e8f\u53f7"), cn(r"\u5b8c\u6210\u4e8b\u9879")])
     append_rows(ws, completion_rows)
 
-    report_text = report.get("report_text") or ""
-    if not report_text:
-        report_text = build_public_report_text(date_value, conversations, git_rows)
-    ws = sheet(cn(r"\u53ef\u76f4\u63a5\u62a5\u5de5\u7248\u672c"), [cn(r"\u62a5\u5de5\u5185\u5bb9")])
-    append_rows(ws, [[report_text]])
+    public_rows = report.get("public_report") or report.get("report_rows") or []
+    if public_rows and isinstance(public_rows[0], dict):
+        public_rows = [[value(r, ["index", cn(r"\u5e8f\u53f7")]), value(r, ["project", cn(r"\u9879\u76ee")]), value(r, ["feature", cn(r"\u529f\u80fd/\u4e8b\u9879")]), value(r, ["content", cn(r"\u62a5\u5de5\u5185\u5bb9")]), value(r, ["count", cn(r"\u5f52\u5e76\u8bb0\u5f55\u6570")]), value(r, ["estimated_work", cn(r"\u5efa\u8bae\u62a5\u5de5\u5de5\u65f6")]), value(r, ["evidence", cn(r"\u8bc1\u636e\u6458\u8981")])] for r in public_rows]
+    elif public_rows:
+        normalized_rows = []
+        for idx, item in enumerate(public_rows, 1):
+            if isinstance(item, (list, tuple)):
+                normalized_rows.append(list(item))
+            else:
+                normalized_rows.append([idx, "", "", item, "", "", ""])
+        public_rows = normalized_rows
+    else:
+        report_text = report.get("report_text") or ""
+        if report_text:
+            public_rows = [[1, "", cn(r"\u81ea\u5b9a\u4e49\u62a5\u5de5\u5185\u5bb9"), report_text, "", "", ""]]
+        else:
+            public_rows = build_public_report_rows(date_value, conversations, git_rows)
+    ws = sheet(cn(r"\u53ef\u76f4\u63a5\u62a5\u5de5\u7248\u672c"), [cn(r"\u5e8f\u53f7"), cn(r"\u9879\u76ee"), cn(r"\u529f\u80fd/\u4e8b\u9879"), cn(r"\u62a5\u5de5\u5185\u5bb9"), cn(r"\u5f52\u5e76\u8bb0\u5f55\u6570"), cn(r"\u5efa\u8bae\u62a5\u5de5\u5de5\u65f6"), cn(r"\u8bc1\u636e\u6458\u8981")])
+    append_rows(ws, public_rows)
 
     def parse_minutes(raw: Any) -> float:
         text = str(raw or "").strip()

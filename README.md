@@ -158,6 +158,13 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 <当前执行目录>\.backup\<skill-name>-yyyyMMdd-HHmmss
 ```
 
+覆盖安装时会额外处理本地文件：
+
+- 旧 skill 目录仍会完整备份，便于回滚和审计。
+- `*.local.json`、`*.local.jsonc` 这类本地配置文件会在新版配置结构一致时自动恢复到新 skill 目录。
+- 如果新版配置结构发生变化，安装器不会覆盖新版模板，会提示“配置文件有变化，请重新自行处理配置文件”，旧配置保留在 `.backup` 中。
+- Excel、日志、preview、state 等运行生成文件只保留在备份目录，不自动恢复到新 skill 目录。
+
 ### 查询列表
 
 ```powershell
@@ -205,7 +212,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1 codex-skill-dev -Force
 | --- | --- | --- | --- |
 | `Skill` | 字符串 | 无 | 要安装的 skill 名称，例如 `lark-cli-config`、`postgres-query`、`codex-skill-dev` 或 `work-orchestrator`。使用 `-List` 时可以不传。 |
 | `-List` | 开关 | 关闭 | 查询仓库里当前可安装的 skill。 |
-| `-Force` | 开关 | 关闭 | 允许覆盖当前目录下已有的同名 skill。覆盖前会自动备份。 |
+| `-Force` | 开关 | 关闭 | 允许覆盖当前目录下已有的同名 skill。覆盖前会完整备份旧目录，并在配置结构一致时自动保留 `*.local.json` / `*.local.jsonc` 本地配置。 |
 | `-Repo` | 字符串 | `mini2kai/codex-skills` | GitHub 仓库，格式是 `owner/repo`。 |
 | `-Ref` | 字符串 | `main` | Git 分支名、tag 或 ref，例如 `main`、`v1.0.0`。 |
 
