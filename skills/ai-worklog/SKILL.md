@@ -99,9 +99,9 @@ Windows、macOS、Linux 都使用 `Path.home()` 和环境变量解析路径。
    - 用户未指定时使用本地时区今天。
    - 用户指定 `today`、`yesterday` 或 `YYYY-MM-DD` 时按本地时区处理。
 2. 收集记录。
-   - Codex：读取 `sessions/YYYY/MM/DD/*.jsonl`。
-   - Claude：读取 `history.jsonl`、`projects/**/*.jsonl`、`sessions/*.json`。
-   - Git：读取相关仓库当天 commit、当前 status。
+   - Codex：扫描目标日期及之前创建、最后写入时间覆盖目标日期的 `sessions/**/*.jsonl`，再按消息 timestamp 精确筛选目标日期，避免跨日旧对话漏统。
+   - Claude：扫描最后写入时间覆盖目标日期的 `projects/**/*.jsonl`，再按消息 timestamp 精确筛选目标日期。
+   - Git：默认只读取显式 `--repo`、当前工作目录仓库、AI session `cwd` 关联仓库的当天 commit 和未提交变更摘要；不要对 `--root` 下所有仓库做全量 status。
    - 文件：仅汇总 AI 记录中出现的文件、生成物、skill/plugin 安装痕迹。
 3. 解析对话。
    - 提取用户请求、assistant 最终回复、工具调用、开始/结束时间。
@@ -111,6 +111,7 @@ Windows、macOS、Linux 都使用 `Path.home()` 和环境变量解析路径。
    - 不同系统、接口、仓库、文档主题应拆开。
 5. 估算耗时。
    - AI 活跃耗时：用户请求到 task_complete/end_turn/最后 assistant 回复。
+   - 连续协作窗口耗时：将 30 分钟内的相邻 AI 轮次合并，用于表达真实工作窗口。
    - 超过 30 分钟且中间无工具调用或消息时，标记为自然空档，不直接算满。
    - 真实工作耗时默认按 AI 活跃耗时乘 3，再按任务类型校正。
 6. 脱敏。
@@ -133,8 +134,8 @@ Excel 台账固定写入 10 个中文工作表，不保留中间 JSON。
 - 数据来源检查
 - AI 对话明细
 - 任务归并统计（包含证据强度）
-- 证据汇总
-- 耗时汇总
+- 证据汇总（包含 AI session、Git commit、未提交变更摘要）
+- 耗时汇总（包含 AI 净活跃耗时、连续协作窗口耗时、估算真实工作耗时）
 - 今日完成事项摘要
 - 可直接报工版本
 

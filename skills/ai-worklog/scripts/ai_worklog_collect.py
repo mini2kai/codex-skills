@@ -9,13 +9,21 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-SENSITIVE_RE = re.compile(r"(?i)(password|passwd|pwd|token|secret|cookie|authorization|access[_-]?token|refresh[_-]?token|private[_-]?key|api[_-]?key)\s*[:=]\s*[^\s,;]+")
-DSN_RE = re.compile(r"(?i)(postgres(?:ql)?://[^\s]+)")
+SENSITIVE_RE = re.compile(r"(?i)(password|passwd|pwd|token|secret|cookie|authorization|access[_-]?token|refresh[_-]?token|private[_-]?key|api[_-]?key|auth[_-]?token)\s*[:=]\s*[^\s,;]+")
+QUOTED_SECRET_RE = re.compile(r"(?i)(password|passwd|pwd|token|secret|cookie|authorization|access[_-]?token|refresh[_-]?token|private[_-]?key|api[_-]?key|auth[_-]?token)\s*=\s*([\"']).*?\2")
+BEARER_RE = re.compile(r"(?i)bearer\s+[a-z0-9._\-]+")
+KEY_PREFIX_RE = re.compile(r"(?i)\b(?:sk|ak|pk|rk)-[a-z0-9][a-z0-9._\-]{12,}\b")
+ACCOUNT_PASSWORD_RE = re.compile(r"(?i)(账号|账户|用户名|user[_-]?name|密码|口令|password|passwd)\s*[:：/]\s*[^\s,;，。]+")
+DSN_RE = re.compile(r"(?i)((?:jdbc:)?postgres(?:ql)?://[^\s]+)")
 
 
 def redact(text: Any) -> str:
     value = "" if text is None else str(text)
+    value = QUOTED_SECRET_RE.sub(lambda m: m.group(1) + "=[REDACTED]", value)
     value = SENSITIVE_RE.sub(lambda m: m.group(1) + "=[REDACTED]", value)
+    value = ACCOUNT_PASSWORD_RE.sub(lambda m: m.group(1) + "=[REDACTED]", value)
+    value = BEARER_RE.sub("Bearer [REDACTED]", value)
+    value = KEY_PREFIX_RE.sub("[REDACTED_KEY]", value)
     value = DSN_RE.sub("[REDACTED_DSN]", value)
     return value
 
@@ -80,22 +88,58 @@ def claude_home() -> Path:
     return Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude").expanduser()
 
 
+def codex_session_file_day(path: Path) -> dt.date | None:
+    parts = path.parts
+    for idx, part in enumerate(parts):
+        if part == "sessions" and idx + 3 < len(parts):
+            try:
+                return dt.date(int(parts[idx + 1]), int(parts[idx + 2]), int(parts[idx + 3]))
+            except ValueError:
+                return None
+    return None
+
+
+def codex_session_files_for_day(day: dt.date) -> list[Path]:
+    sessions_root = codex_home() / "sessions"
+    if not sessions_root.exists():
+        return []
+    start = dt.datetime.combine(day, dt.time.min)
+    candidates: list[Path] = []
+    for path in sessions_root.glob("*/*/*/*.jsonl"):
+        file_day = codex_session_file_day(path)
+        if file_day is None or file_day > day:
+            continue
+        try:
+            mtime = dt.datetime.fromtimestamp(path.stat().st_mtime)
+        except OSError:
+            continue
+        if file_day == day or mtime >= start:
+            candidates.append(path)
+    return sorted(candidates)
+
+
+def file_may_contain_day(path: Path, day: dt.date) -> bool:
+    start = dt.datetime.combine(day, dt.time.min)
+    try:
+        return dt.datetime.fromtimestamp(path.stat().st_mtime) >= start
+    except OSError:
+        return False
+
+
 def collect_codex(day: dt.date) -> tuple[list[dict[str, Any]], list[Path], set[Path]]:
-    home = codex_home()
-    session_dir = home / "sessions" / f"{day:%Y}" / f"{day:%m}" / f"{day:%d}"
     rows: list[dict[str, Any]] = []
     files: list[Path] = []
     cwds: set[Path] = set()
-    if not session_dir.exists():
-        return rows, files, cwds
-    for path in sorted(session_dir.glob("*.jsonl")):
-        files.append(path)
+    for path in codex_session_files_for_day(day):
         current: dict[str, Any] | None = None
         last_agent = ""
         last_ts: dt.datetime | None = None
         cwd = None
+        has_day_event = False
         for obj in read_jsonl(path):
             ts = parse_ts(obj.get("timestamp"))
+            if in_day(ts, day):
+                has_day_event = True
             if obj.get("type") == "session_meta":
                 cwd_text = ((obj.get("payload") or {}).get("cwd"))
                 if cwd_text:
@@ -139,6 +183,8 @@ def collect_codex(day: dt.date) -> tuple[list[dict[str, Any]], list[Path], set[P
                 last_ts = ts or last_ts
         if current:
             rows.append(finish_row(current, last_ts, last_agent, path))
+        if has_day_event:
+            files.append(path)
     return rows, files, cwds
 
 
@@ -186,17 +232,16 @@ def collect_claude(day: dt.date) -> tuple[list[dict[str, Any]], list[Path], set[
     if not projects.exists():
         return rows, files, cwds
     for path in sorted(projects.rglob("*.jsonl")):
-        try:
-            if dt.datetime.fromtimestamp(path.stat().st_mtime).date() != day:
-                continue
-        except OSError:
+        if not file_may_contain_day(path, day):
             continue
-        files.append(path)
         current: dict[str, Any] | None = None
         last_text = ""
         last_ts: dt.datetime | None = None
+        has_day_event = False
         for obj in read_jsonl(path):
             ts = parse_ts(obj.get("timestamp"))
+            if in_day(ts, day):
+                has_day_event = True
             if not in_day(ts, day):
                 continue
             if obj.get("cwd"):
@@ -237,6 +282,8 @@ def collect_claude(day: dt.date) -> tuple[list[dict[str, Any]], list[Path], set[
                 last_text = ""
         if current:
             rows.append(finish_row(current, last_ts, last_text, path))
+        if has_day_event:
+            files.append(path)
     return rows, files, cwds
 
 
@@ -263,14 +310,6 @@ def discover_repos(explicit: list[str], roots: list[str], cwds: set[Path]) -> li
         root = Path(raw).expanduser().resolve()
         if is_git_repo(root):
             candidates.add(root)
-        if root.exists():
-            for child in root.glob("*"):
-                if child.is_dir() and is_git_repo(child):
-                    candidates.add(child.resolve())
-                elif child.is_dir():
-                    for grand in child.glob("*"):
-                        if grand.is_dir() and is_git_repo(grand):
-                            candidates.add(grand.resolve())
     return sorted(candidates, key=lambda p: str(p).lower())
 
 
@@ -282,13 +321,35 @@ def run_git(repo: Path, args: list[str]) -> str:
         return f"git_error: {exc}"
 
 
+def summarize_git_status(raw: str, max_examples: int = 20) -> str:
+    if not raw:
+        return ""
+    lines = [line for line in raw.splitlines() if line.strip()]
+    if not lines:
+        return ""
+    counts: dict[str, int] = {}
+    examples: list[str] = []
+    for line in lines:
+        code = line[:2].strip() or "?"
+        counts[code] = counts.get(code, 0) + 1
+        if len(examples) < max_examples:
+            examples.append(line)
+    parts = [f"{key}:{value}" for key, value in sorted(counts.items())]
+    summary = f"{len(lines)} changed files (" + ", ".join(parts) + ")"
+    if examples:
+        summary += "\n" + "\n".join(examples)
+    if len(lines) > len(examples):
+        summary += f"\n... {len(lines) - len(examples)} more"
+    return summary
+
+
 def collect_git(day: dt.date, repos: list[Path]) -> list[dict[str, Any]]:
     start = f"{day.isoformat()} 00:00:00"
     end = f"{(day + dt.timedelta(days=1)).isoformat()} 00:00:00"
     rows = []
     for repo in repos:
         log = run_git(repo, ["log", f"--since={start}", f"--until={end}", "--date=iso", "--pretty=format:%h\t%ad\t%an\t%s"])
-        status = run_git(repo, ["status", "--short"])
+        status = summarize_git_status(run_git(repo, ["status", "--short"]))
         rows.append({"repo": str(repo), "commits": log, "status": status})
     return rows
 
@@ -304,13 +365,13 @@ def duration_minutes(row: dict[str, Any]) -> float:
 
 def estimate_multiplier(row: dict[str, Any]) -> float:
     text = f"{row.get('request', '')} {row.get('result', '')}".lower()
-    if any(k in text for k in ["commit", "git", "??", "??", "??", "mapper", "??", "bug"]):
+    if any(k in text for k in ["commit", "git", "mapper", "bug", cn(r"\u4fee\u590d"), cn(r"\u63d0\u4ea4"), cn(r"\u5f00\u53d1"), cn(r"\u63a5\u53e3"), cn(r"\u4ee3\u7801")]):
         return 3.5
-    if any(k in text for k in ["sql", "postgres", "pg", "???", "??", "??sql"]):
+    if any(k in text for k in ["sql", "postgres", "pg", cn(r"\u6570\u636e\u5e93"), cn(r"\u67e5\u8be2"), cn(r"\u8bed\u53e5")]):
         return 3.0
-    if any(k in text for k in ["skill", "??", "??", "???"]):
+    if any(k in text for k in ["skill", cn(r"\u5de5\u5177"), cn(r"\u811a\u672c"), cn(r"\u81ea\u52a8\u5316")]):
         return 3.0
-    if any(k in text for k in ["??", "??", "sheet", "??", "??"]):
+    if any(k in text for k in ["sheet", "excel", "doc", "lark", cn(r"\u98de\u4e66"), cn(r"\u6587\u6863"), cn(r"\u8868\u683c"), cn(r"\u603b\u7ed3")]):
         return 2.5
     if len(text) < 120 and not row.get("used_tool"):
         return 1.5
@@ -326,6 +387,40 @@ def effective_ai_minutes(row: dict[str, Any]) -> float:
 
 def estimate_work_minutes(row: dict[str, Any]) -> float:
     return round(effective_ai_minutes(row) * estimate_multiplier(row), 1)
+
+
+def parse_datetime_value(value: Any) -> dt.datetime | None:
+    if isinstance(value, dt.datetime):
+        return value
+    text = str(value or "").strip()
+    if not text:
+        return None
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+        try:
+            return dt.datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+    return parse_ts(text)
+
+
+def collaboration_window_minutes(rows: list[dict[str, Any]], idle_cap_minutes: float = 30.0) -> float:
+    intervals: list[tuple[dt.datetime, dt.datetime]] = []
+    for row in rows:
+        start = parse_datetime_value(row.get("start"))
+        end = parse_datetime_value(row.get("end"))
+        if start is None or end is None or end < start:
+            continue
+        intervals.append((start, end))
+    if not intervals:
+        return 0.0
+    intervals.sort(key=lambda item: item[0])
+    merged: list[list[dt.datetime]] = []
+    for start, end in intervals:
+        if not merged or (start - merged[-1][1]).total_seconds() / 60 > idle_cap_minutes:
+            merged.append([start, end])
+        elif end > merged[-1][1]:
+            merged[-1][1] = end
+    return round(sum((end - start).total_seconds() / 60 for start, end in merged), 1)
 
 
 def row_to_jsonable(row: dict[str, Any]) -> dict[str, Any]:
@@ -353,6 +448,7 @@ def render_markdown(data: dict[str, Any]) -> str:
     git_rows = data["git"]
     total_ai = round(sum(row["ai_active_minutes"] for row in conv), 1)
     total_work = round(sum(row["estimated_work_minutes"] for row in conv), 1)
+    total_window = collaboration_window_minutes(conv)
     source_rows = [[s["source"], s["path"], s["count"], s["status"]] for s in sources]
     conv_rows = []
     for idx, row in enumerate(conv, 1):
@@ -370,7 +466,7 @@ def render_markdown(data: dict[str, Any]) -> str:
         commits = row["commits"] if row["commits"] else "无当天 commit"
         status = "有未提交变更" if row["status"] else "干净"
         git_table_rows.append([row["repo"], shorten(commits, 180), status])
-    parts = [f"# AI Worklog {data['date']}", "", "## 数据来源", markdown_table(["来源", "路径", "记录数", "状态"], source_rows), "", "## AI 对话明细", markdown_table(["序号", "AI工具", "时间", "用户请求摘要", "AI处理结果", "AI活跃耗时(分钟)", "证据"], conv_rows), "", "## Git 证据", markdown_table(["仓库", "当天提交", "状态"], git_table_rows), "", "## 耗时汇总", markdown_table(["指标", "分钟", "小时"], [["AI活跃耗时", total_ai, round(total_ai / 60, 2)], ["估算真实工作耗时", total_work, round(total_work / 60, 2)]]), ""]
+    parts = [f"# AI Worklog {data['date']}", "", "## 数据来源", markdown_table(["来源", "路径", "记录数", "状态"], source_rows), "", "## AI 对话明细", markdown_table(["序号", "AI工具", "时间", "用户请求摘要", "AI处理结果", "AI活跃耗时(分钟)", "证据"], conv_rows), "", "## Git 证据", markdown_table(["仓库", "当天提交", "状态"], git_table_rows), "", "## 耗时汇总", markdown_table(["指标", "分钟", "小时"], [["AI活跃耗时", total_ai, round(total_ai / 60, 2)], ["连续协作窗口耗时", total_window, round(total_window / 60, 2)], ["估算真实工作耗时", total_work, round(total_work / 60, 2)]]), ""]
     return "\n".join(parts)
 
 
@@ -819,7 +915,7 @@ def count_git_commits(git_rows: list[dict[str, Any]]) -> int:
         commits = str(row.get("commits") or "").strip()
         if not commits or commits.startswith("git_error"):
             continue
-        total += len([line for line in commits.splitlines() if line.strip()])
+        total += len([line for line in commits.splitlines() if re.match(r"^[0-9a-f]{7,40}\s", line.strip(), re.I)])
     return total
 
 
@@ -1008,11 +1104,11 @@ def write_excel(data: dict[str, Any], output_path: Path, mode: str = "upsert") -
 
     def evidence_strength(*parts: Any) -> str:
         text = " ".join(str(part or "") for part in parts).lower()
-        if ("commit" in text or re.search(r"\b[0-9a-f]{7,40}\b", text)) and ("session" in text or "??" in text or "file" in text or "sql" in text):
+        if ("commit" in text or re.search(r"\b[0-9a-f]{7,40}\b", text)) and ("session" in text or ".jsonl" in text or "file" in text or "sql" in text):
             return cn(r"\u5f3a")
         if "commit" in text or re.search(r"\b[0-9a-f]{7,40}\b", text):
             return cn(r"\u5f3a")
-        if any(k in text for k in ["session", "sql", "pg", "postgres", "??", "??", "????", "file"]):
+        if any(k in text for k in ["session", ".jsonl", "sql", "pg", "postgres", "file", cn(r"\u6587\u4ef6"), cn(r"\u4f1a\u8bdd")]):
             return cn(r"\u4e2d")
         return cn(r"\u5f31")
 
@@ -1054,11 +1150,19 @@ def write_excel(data: dict[str, Any], output_path: Path, mode: str = "upsert") -
         evidence_rows = [[value(r, ["type", cn(r"\u7c7b\u578b")]), value(r, ["location", "project", cn(r"\u9879\u76ee/\u4f4d\u7f6e")]), value(r, ["evidence", cn(r"\u8bc1\u636e")]), value(r, ["note", cn(r"\u8bf4\u660e")])] for r in evidence_rows]
     elif not evidence_rows:
         evidence_rows = []
+        session_names = sorted({evidence_file_name(row.get("evidence", "")) for row in conversations if row.get("evidence")})
+        for name in session_names:
+            evidence_rows.append(["AI session", "Codex/Claude", name, cn(r"AI \u4f1a\u8bdd\u8bc1\u636e")])
         for row in git_rows:
             repo = Path(str(row.get("repo") or "")).name
-            commits = str(row.get("commits") or cn(r"\u65e0\u5f53\u5929 commit"))
-            for line in commits.splitlines() or [commits]:
+            commits = str(row.get("commits") or "").strip()
+            commit_lines = [line for line in commits.splitlines() if re.match(r"^[0-9a-f]{7,40}\s", line.strip(), re.I)]
+            for line in commit_lines:
                 evidence_rows.append(["Git commit", repo, line, cn(r"Git \u5f53\u5929\u63d0\u4ea4")])
+            if not commit_lines:
+                evidence_rows.append(["Git", repo, cn(r"\u65e0\u5f53\u5929 commit"), cn(r"Git \u5f53\u5929\u63d0\u4ea4\u68c0\u67e5")])
+            if row.get("status"):
+                evidence_rows.append(["Git status", repo, row.get("status"), cn(r"\u672a\u63d0\u4ea4\u53d8\u66f4\u6458\u8981")])
     ws = sheet(cn(r"\u8bc1\u636e\u6c47\u603b"), [cn(r"\u7c7b\u578b"), cn(r"\u9879\u76ee/\u4f4d\u7f6e"), cn(r"\u8bc1\u636e"), cn(r"\u8bf4\u660e")])
     append_rows(ws, evidence_rows)
 
@@ -1068,7 +1172,11 @@ def write_excel(data: dict[str, Any], output_path: Path, mode: str = "upsert") -
     elif not time_rows:
         total_ai = round(sum(float(row.get("ai_active_minutes") or 0) for row in conversations), 1)
         total_work = round(sum(float(row.get("estimated_work_minutes") or 0) for row in conversations), 1)
-        time_rows = [[cn(r"\u5408\u8ba1"), fmt_minutes(total_ai), fmt_minutes(total_work), cn(r"\u81ea\u52a8\u4f30\u7b97")]]
+        total_window = collaboration_window_minutes(conversations)
+        time_rows = [
+            [cn(r"\u5408\u8ba1"), fmt_minutes(total_ai), fmt_minutes(total_work), cn(r"\u9010\u8f6e AI \u51c0\u6d3b\u8dc3\u8017\u65f6")],
+            [cn(r"\u8fde\u7eed\u534f\u4f5c\u7a97\u53e3"), fmt_minutes(total_window), "", cn(r"30 \u5206\u949f\u5185\u95f4\u9694\u5408\u5e76")],
+        ]
     ws = sheet(cn(r"\u8017\u65f6\u6c47\u603b"), [cn(r"\u5206\u7c7b"), cn(r"AI\u6d3b\u8dc3\u8017\u65f6"), cn(r"\u4f30\u7b97\u771f\u5b9e\u5de5\u4f5c\u8017\u65f6"), cn(r"\u8bf4\u660e")])
     append_rows(ws, time_rows)
 
