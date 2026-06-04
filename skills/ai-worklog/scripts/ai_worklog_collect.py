@@ -909,6 +909,28 @@ def strip_public_noise(text: Any) -> str:
     return value
 
 
+def public_specific_detail(row: dict[str, Any]) -> str:
+    request = strip_public_noise(row.get("request", ""))
+    result = strip_public_noise(row.get("result", ""))
+    snippets: list[str] = []
+    text = f"{request} {result}".lower()
+    rules = [
+        (["ai-worklog", "worklog", cn(r"\u65e5\u62a5"), cn(r"\u62a5\u5de5")], cn(r"\u5efa\u8bbe AI \u5de5\u4f5c\u65e5\u62a5\u4e0e\u62a5\u5de5\u7edf\u8ba1\u5de5\u5177")),
+        (["preview", cn(r"\u9884\u89c8"), cn(r"\u9690\u79c1"), cn(r"\u9ed1\u540d\u5355"), cn(r"\u786e\u8ba4")], cn(r"\u5b8c\u5584\u9690\u79c1\u9884\u89c8\u786e\u8ba4\u548c\u7d20\u6750\u7b5b\u9009\u6d41\u7a0b")),
+        ([cn(r"\u5b89\u88c5"), cn(r"\u5907\u4efd"), cn(r"\u914d\u7f6e\u6587\u4ef6"), "install"], cn(r"\u4f18\u5316 Skill \u5b89\u88c5\u3001\u5907\u4efd\u548c\u672c\u5730\u914d\u7f6e\u4fdd\u7559\u673a\u5236")),
+        ([cn(r"\u98de\u4e66"), "lark", cn(r"\u804a\u5929\u8bb0\u5f55")], cn(r"\u68b3\u7406\u98de\u4e66\u804a\u5929\u8bb0\u5f55\u8bfb\u53d6\u53ef\u884c\u6027\u548c\u6388\u6743\u8981\u6c42")),
+        ([cn(r"\u63a8\u9001\u65e5\u5fd7"), cn(r"\u5168\u91cf\u5bfc\u51fa"), cn(r"\u5bfc\u51fa"), "selection-detail-task-export"], cn(r"\u65b0\u589e\u548c\u4f18\u5316 OTB \u63a8\u9001\u65e5\u5fd7\u5168\u91cf\u5bfc\u51fa\u80fd\u529b")),
+        (["is_effective", "zero-row", cn(r"\u5fae\u5546\u57ce"), cn(r"\u603b\u90e8\u4ed3\u5e93"), cn(r"\u8fc7\u6ee4\u53e3\u5f84")], cn(r"\u7edf\u4e00\u6e20\u9053 OTB \u9875\u9762\u95e8\u5e97\u6709\u6548\u6027\u548c\u4e0d\u5c55\u793a\u884c\u8fc7\u6ee4\u53e3\u5f84")),
+        ([cn(r"\u95e8\u5e97\u6570"), cn(r"\u5e97\u94fa\u6570"), "120", "116"], cn(r"\u6392\u67e5\u6e20\u9053 OTB \u4e0e\u7b7e\u6279\u8868\u95e8\u5e97\u6570\u5dee\u5f02\u539f\u56e0")),
+        ([cn(r"\u7b7e\u6279\u8868"), cn(r"\u6311\u6218\u76ee\u6807"), cn(r"\u4e70\u8d27")], cn(r"\u68b3\u7406 OTB \u7b7e\u6279\u8868\u6311\u6218\u76ee\u6807\u548c\u4e70\u8d27\u53e3\u5f84")),
+        ([cn(r"\u6570\u636e\u5bf9\u4e0d\u4e0a"), cn(r"\u4e0d\u4e00\u81f4"), cn(r"\u8bc1\u660e"), "sql"], cn(r"\u63d0\u4f9b\u6570\u636e\u5dee\u5f02\u6838\u5bf9\u548c\u95ee\u9898\u5b9a\u4f4d\u4f9d\u636e")),
+    ]
+    for keywords, summary in rules:
+        if any(keyword.lower() in text for keyword in keywords):
+            snippets.append(summary)
+    return " || ".join(snippets[:2])
+
+
 def count_git_commits(git_rows: list[dict[str, Any]]) -> int:
     total = 0
     for row in git_rows:
@@ -982,12 +1004,15 @@ def build_public_report_rows(date_value: str, conversations: list[dict[str, Any]
         if project not in project_order:
             project_order.append(project)
         key = (project, feature)
-        item = grouped.setdefault(key, {"count": 0, "minutes": 0.0, "points": [], "evidence": set()})
+        item = grouped.setdefault(key, {"count": 0, "minutes": 0.0, "points": [], "details": [], "evidence": set()})
         item["count"] += 1
         item["minutes"] += float(row.get("estimated_work_minutes") or 0)
         point = public_delivery_point(row)
         if point and point not in item["points"]:
             item["points"].append(point)
+        detail = public_specific_detail(row)
+        if detail and detail not in item["details"]:
+            item["details"].append(detail)
         evidence = evidence_file_name(row.get("evidence", ""))
         if evidence:
             item["evidence"].add(evidence)
@@ -1000,6 +1025,18 @@ def build_public_report_rows(date_value: str, conversations: list[dict[str, Any]
         for feature, item in feature_items:
             points = item["points"][:3]
             content_lines = [f"{idx}. {point}" for idx, point in enumerate(points, 1)]
+            details: list[str] = []
+            for detail in item.get("details", []):
+                for part in str(detail).split(" || "):
+                    part = part.strip()
+                    if part and part not in details:
+                        details.append(part)
+                    if len(details) >= 3:
+                        break
+                if len(details) >= 3:
+                    break
+            for detail in details:
+                content_lines.append(str(len(content_lines) + 1) + ". " + cn(r"\u672c\u6b21\u5177\u4f53\u4e8b\u9879\uff1a") + detail)
             if len(item["points"]) > 3:
                 content_lines.append(cn(r"\u5176\u4ed6\u76f8\u5173\u6c9f\u901a\u3001\u9a8c\u8bc1\u548c\u8ddf\u8fdb\u4e8b\u9879\u5df2\u5408\u5e76\u5f52\u6863\u3002"))
             evidence_parts = [cn(r"\u5f52\u5e76 AI \u534f\u4f5c\u8bb0\u5f55 ") + str(item["count"]) + cn(r" \u6761")]
