@@ -8,6 +8,8 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.venv/
+dist/
 
 # Local temp files
 *.tmp

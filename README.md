@@ -1,16 +1,17 @@
-# Codex Skills
+# M2K Skills
 
-[![GitHub stars](https://img.shields.io/github/stars/mini2kai/codex-skills?style=social)](https://github.com/mini2kai/codex-skills/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/mini2kai/codex-skills?style=social)](https://github.com/mini2kai/codex-skills/forks)
-[![GitHub issues](https://img.shields.io/github/issues/mini2kai/codex-skills)](https://github.com/mini2kai/codex-skills/issues)
+[![GitHub stars](https://img.shields.io/github/stars/mini2kai/m2k-skills?style=social)](https://github.com/mini2kai/m2k-skills/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/mini2kai/m2k-skills?style=social)](https://github.com/mini2kai/m2k-skills/forks)
+[![GitHub issues](https://img.shields.io/github/issues/mini2kai/m2k-skills)](https://github.com/mini2kai/m2k-skills/issues)
 [![Skills](https://img.shields.io/badge/skills-7-success)](#skill-catalog)
+[![Manager](https://img.shields.io/badge/manager-m2k--skills--tools-00A6D6)](#m2k-skills-tools)
 [![Installer](https://img.shields.io/badge/installer-PowerShell-5391FE)](#installation)
 [![License](https://img.shields.io/badge/license-Non--Commercial-lightgrey)](#license)
-[![Codex](https://img.shields.io/badge/Codex-skills-black)](#using-with-codex)
+[![Agent](https://img.shields.io/badge/agent-skills-black)](#using-with-agent-tools)
 
-一组可复用、可审计、可安全安装的 Codex Skills，用于把高频 AI 协作流程沉淀为稳定能力。
+一组可复用、可审计、可安全安装的 M2K Skills，用于把高频 AI 协作流程沉淀为稳定能力。
 
-本仓库面向日常研发、数据查询、飞书/Lark 协作、服务器日志只读排查、AI 工作日报统计，以及 Skill 本身的开发发布流程。每个 `skills/<skill-name>/` 目录都是一个完整、可独立安装的 skill，可以按需安装到本机 Codex skills 目录，也可以在团队内部 fork 后维护自己的版本。
+本仓库面向日常研发、数据查询、飞书/Lark 协作、服务器日志只读排查、AI 工作日报统计，以及 Skill 本身的开发发布流程。每个 `skills/<skill-name>/` 目录都是一个完整、可独立安装的 skill，可以按需安装到 Codex、Claude 或其他支持本地 skill/指令目录的 agent 工具中，也可以在团队内部 fork 后维护自己的版本。
 
 ## Highlights
 
@@ -23,11 +24,54 @@
 
 ## Installation
 
+### m2k-skills-tools
+
+推荐使用漂亮的终端管理器安装和更新本仓库的 skills。发布到 PyPI 后可直接运行：
+
+```powershell
+uvx --from m2k-skills-tools m2k-skills-tools
+```
+
+无参数启动会进入全屏 TUI，并先选择安装目标目录。顶部 Logo 常驻，左侧菜单切换页面，右侧显示当前页面内容。`←` / `→` 切换左右区域，`↑` / `↓` 移动选中项，`Space` 用 `□` / `✓` 勾选，`Enter` 确认，`b` 返回首页，`r` 刷新，`q` 退出。Tab 已禁用，统一使用方向键。选择目标目录后会后台预加载安装状态和环境检查；manifest/commit/status/doctor 在当前 TUI 会话内缓存，按 `r` 强制刷新。安装/更新合并为一个页面，第一项支持全选/取消全选，每个 skill 下方显示简介和依赖，状态固定显示在右侧；未安装项选中后安装，非最新项选中后更新，最新项不可选。安装/更新过程会显示下载、解压、复制文件、恢复配置等进度和日志。
+
+常用命令：
+
+```powershell
+# 查看 Codex skills 目录中的安装状态
+uvx --from m2k-skills-tools m2k-skills-tools status --target codex
+
+# 安装到 Codex skills 目录
+uvx --from m2k-skills-tools m2k-skills-tools add ai-worklog --target codex
+
+# 安装到 Claude skills 目录
+uvx --from m2k-skills-tools m2k-skills-tools add ai-worklog --target claude
+
+# 更新全部已安装 skill，会二次确认并自动备份旧目录
+uvx --from m2k-skills-tools m2k-skills-tools update all --target codex
+```
+
+工具会展示本机安装状态、安装时间、本地 commit、线上 commit，并支持打开已安装 skill 的本地配置文件。
+
+本仓库开发调试时可以直接运行源码包：
+
+```powershell
+uv run --project packages/m2k-skills-tools m2k-skills-tools status --target codex
+```
+
+如果只是本地长期试用，可以安装为 uv tool，后续直接运行命令：
+
+```powershell
+uv tool install -e packages/m2k-skills-tools
+m2k-skills-tools --target codex
+```
+
+### Legacy PowerShell Installer
+
 推荐安装到 Codex 官方 skills 目录：
 
 ```powershell
 cd $HOME\.codex\skills
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog
 ```
 
 安装完成后，重启 Codex 让新 skill 生效。
@@ -35,7 +79,7 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 查询当前可安装的 skill：
 
 ```powershell
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill -List
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill -List
 ```
 
 安装其他 skill 时，将 `ai-worklog` 替换为下面目录中的任意 skill 名称即可。
@@ -56,25 +100,25 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 
 ```powershell
 # AI 工作日报 / 报工统计
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog
 
 # Codex skill 开发和发布流程
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill codex-skill-dev
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill codex-skill-dev
 
 # 飞书 / Lark CLI 配置和文档流程
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill lark-cli-config
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill lark-cli-config
 
 # PostgreSQL 只读查询
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill postgres-query
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill postgres-query
 
 # 服务器日志只读排查
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill server-docker-logs-readonly
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill server-docker-logs-readonly
 
 # Web Demo 生成、预览和发布
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill web-demo-publisher
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill web-demo-publisher
 
 # 手动总控编排
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill work-orchestrator
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill work-orchestrator
 ```
 
 ## Installer Behavior
@@ -94,7 +138,7 @@ C:\Users\you\.codex\skills\ai-worklog
 默认不会覆盖同名目录。需要覆盖安装时使用 `-Force`：
 
 ```powershell
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog -Force
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog -Force
 ```
 
 覆盖前会自动备份旧目录：
@@ -117,40 +161,40 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 | `Skill` | 无 | 要安装的 skill 名称，例如 `ai-worklog`、`postgres-query`。使用 `-List` 时可以不传。 |
 | `-List` | 关闭 | 查询仓库里当前可安装的 skill。 |
 | `-Force` | 关闭 | 允许覆盖当前目录下已有的同名 skill，覆盖前会完整备份旧目录。 |
-| `-Repo` | `mini2kai/codex-skills` | GitHub 仓库，格式为 `owner/repo`，适合 fork 后安装。 |
+| `-Repo` | `mini2kai/m2k-skills` | GitHub 仓库，格式为 `owner/repo`，适合 fork 后安装。 |
 | `-Ref` | `main` | Git 分支、tag 或 ref，例如 `main`、`v1.0.0`。 |
 
 从指定 tag 或分支安装：
 
 ```powershell
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog -Ref v1.0.0
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog -Ref v1.0.0
 ```
 
 从 fork 安装：
 
 ```powershell
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog -Repo owner/repo -Ref main
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill ai-worklog -Repo owner/repo -Ref main
 ```
 
 如果不想直接执行 `irm | iex`，可以先下载安装器：
 
 ```powershell
-Invoke-WebRequest https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 -OutFile install.ps1
+Invoke-WebRequest https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 -OutFile install.ps1
 powershell -ExecutionPolicy Bypass -File .\install.ps1 ai-worklog
 ```
 
-## Using With Codex
+## Using With Agent Tools
 
-也可以通过 Codex 自带的 `skill-installer` 从 GitHub 安装：
+Codex 用户也可以通过 Codex 自带的 `skill-installer` 从 GitHub 安装：
 
 ```powershell
-python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/ai-worklog
-python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/codex-skill-dev
-python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/lark-cli-config
-python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/postgres-query
-python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/server-docker-logs-readonly
-python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/web-demo-publisher
-python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/work-orchestrator
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/ai-worklog
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/codex-skill-dev
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/lark-cli-config
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/postgres-query
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/server-docker-logs-readonly
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/web-demo-publisher
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/work-orchestrator
 ```
 
 ## Usage Notes
@@ -217,7 +261,7 @@ powershell -ExecutionPolicy Bypass -File .\web-demo-publisher\scripts\generate-f
 ## Repository Layout
 
 ```text
-codex-skills/
+m2k-skills/
 |-- skills/
 |   |-- ai-worklog/
 |   |   |-- SKILL.md
@@ -232,6 +276,8 @@ codex-skills/
 |   `-- work-orchestrator/
 |-- scripts/
 |   `-- install.ps1
+|-- packages/
+|   `-- m2k-skills-tools/
 |-- manifest.json
 `-- README.md
 ```
@@ -265,7 +311,7 @@ python -m json.tool manifest.json
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=mini2kai/codex-skills&type=Date)](https://www.star-history.com/#mini2kai/codex-skills&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=mini2kai/m2k-skills&type=Date)](https://www.star-history.com/#mini2kai/m2k-skills&Date)
 
 ## License
 

@@ -1,6 +1,6 @@
 # 仓库约定
 
-本文件用于在 `mini2kai/codex-skills` 仓库中开发或更新 skill 时确认项目级约定。
+本文件用于在 `mini2kai/m2k-skills` 仓库中开发或更新 skill 时确认项目级约定。
 
 ## 目录结构
 
@@ -32,13 +32,13 @@ skills/<skill-name>/
 常用安装命令：
 
 ```powershell
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill <skill-name>
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill <skill-name>
 ```
 
 覆盖安装：
 
 ```powershell
-irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill <skill-name> -Force
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill <skill-name> -Force
 ```
 
 ## README 同步内容

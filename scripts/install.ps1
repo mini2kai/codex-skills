@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-$script:CodexSkillsDefaultRepo = "mini2kai/codex-skills"
+$script:CodexSkillsDefaultRepo = "mini2kai/m2k-skills"
 $script:CodexSkillsDefaultRef = "main"
 
 function Get-CodexInstallerCommand {
@@ -435,7 +435,7 @@ function Show-CodexSkillList {
         [string]$Ref = $script:CodexSkillsDefaultRef
     )
 
-    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("codex-skills-" + [System.Guid]::NewGuid().ToString("N"))
+    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("m2k-skills-" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
 
     try {
@@ -521,7 +521,7 @@ function Install-CodexSkill {
             return
         }
 
-        $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("codex-skills-" + [System.Guid]::NewGuid().ToString("N"))
+        $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("m2k-skills-" + [System.Guid]::NewGuid().ToString("N"))
         New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
 
         try {

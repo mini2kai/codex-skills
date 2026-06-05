@@ -1,4 +1,4 @@
-"""预检 codex-skills 仓库中的单个 skill。"""
+"""预检 m2k-skills 仓库中的单个 skill。"""
 
 from __future__ import annotations
 
@@ -118,7 +118,7 @@ def scan_skill(repo_root: Path, skill: str) -> dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="预检 codex-skills 仓库中的单个 skill。")
+    parser = argparse.ArgumentParser(description="预检 m2k-skills 仓库中的单个 skill。")
     parser.add_argument("--repo-root", default=".", help="仓库根目录，默认当前目录。")
     parser.add_argument("--skill", required=True, help="skill 名称。")
     args = parser.parse_args()

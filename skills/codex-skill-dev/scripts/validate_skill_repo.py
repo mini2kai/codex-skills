@@ -1,4 +1,4 @@
-"""运行 codex-skills 仓库级 skill 校验。"""
+"""运行 m2k-skills 仓库级 skill 校验。"""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def emit(payload: dict[str, Any], exit_code: int = 0) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="运行 codex-skills 仓库级 skill 校验。")
+    parser = argparse.ArgumentParser(description="运行 m2k-skills 仓库级 skill 校验。")
     parser.add_argument("--repo-root", default=".", help="仓库根目录，默认当前目录。")
     parser.add_argument("--skill", required=True, help="skill 名称。")
     parser.add_argument("--skip-py-compile", action="store_true", help="跳过 Python 脚本语法检查。")

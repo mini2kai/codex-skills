@@ -1,4 +1,4 @@
-"""同步 codex-skills 仓库 manifest.json 中的 skill 信息。"""
+"""同步 m2k-skills 仓库 manifest.json 中的 skill 信息。"""
 
 from __future__ import annotations
 

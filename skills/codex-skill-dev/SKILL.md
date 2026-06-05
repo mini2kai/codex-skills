@@ -1,6 +1,6 @@
 ---
 name: codex-skill-dev
-description: 中文 Codex skill 开发、更新、验证和 GitHub 发布流程。Use when the user asks to create, update, standardize, validate, package, document, install, publish, or sync a skill in the codex-skills repository; when manifest.json, README.md, install.ps1, agents/openai.yaml, references, scripts, UTF-8 encoding, Windows PowerShell pitfalls, validation, git commit, or GitHub push are involved.
+description: 中文 Codex skill 开发、更新、验证和 GitHub 发布流程。Use when the user asks to create, update, standardize, validate, package, document, install, publish, or sync a skill in the m2k-skills repository; when manifest.json, README.md, install.ps1, agents/openai.yaml, references, scripts, UTF-8 encoding, Windows PowerShell pitfalls, validation, git commit, or GitHub push are involved.
 ---
 
 # Codex Skill Dev
