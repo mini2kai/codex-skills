@@ -1,0 +1,19 @@
+{
+  "name": "slidev-talk",
+  "displayName": "Slidev Talk",
+  "type": "slidev",
+  "requiresNode": true,
+  "entry": "slides.md",
+  "publishMode": "vite-preview",
+  "bestFor": [
+    "技术分享",
+    "网页演示 PPT",
+    "培训材料",
+    "团队规范分享"
+  ],
+  "expectedFiles": [
+    "package.json",
+    "slides.md"
+  ]
+}
+

@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "dev": "slidev --host 127.0.0.1",
+    "build": "slidev build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@slidev/cli": "latest",
+    "@slidev/theme-default": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {}
+}
+

@@ -26,3 +26,7 @@ skills/server-docker-logs-readonly/logs/
 # Local ai-worklog Excel ledger
 skills/ai-worklog/data/*.xlsx
 skills/ai-worklog/data/*.xlsm
+
+# Local web-demo-publisher runtime state
+skills/web-demo-publisher/data/*.local.json
+skills/web-demo-publisher/data/*.local.jsonc

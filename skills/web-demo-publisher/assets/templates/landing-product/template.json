@@ -1,0 +1,21 @@
+{
+  "name": "landing-product",
+  "displayName": "Product Landing Page",
+  "type": "vite-react",
+  "requiresNode": true,
+  "entry": "src/main.jsx",
+  "publishMode": "vite-preview",
+  "bestFor": [
+    "产品介绍页",
+    "项目官网",
+    "作品集第一页",
+    "SaaS 首页"
+  ],
+  "expectedFiles": [
+    "package.json",
+    "index.html",
+    "src/main.jsx",
+    "src/styles.css"
+  ]
+}
+

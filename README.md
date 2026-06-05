@@ -3,7 +3,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/mini2kai/codex-skills?style=social)](https://github.com/mini2kai/codex-skills/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/mini2kai/codex-skills?style=social)](https://github.com/mini2kai/codex-skills/forks)
 [![GitHub issues](https://img.shields.io/github/issues/mini2kai/codex-skills)](https://github.com/mini2kai/codex-skills/issues)
-[![Skills](https://img.shields.io/badge/skills-6-success)](#skill-catalog)
+[![Skills](https://img.shields.io/badge/skills-7-success)](#skill-catalog)
 [![Installer](https://img.shields.io/badge/installer-PowerShell-5391FE)](#installation)
 [![License](https://img.shields.io/badge/license-Non--Commercial-lightgrey)](#license)
 [![Codex](https://img.shields.io/badge/Codex-skills-black)](#using-with-codex)
@@ -49,6 +49,7 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 | `lark-cli-config` | 引导 Feishu/Lark CLI 授权配置，安全读取和维护文档、Wiki、表格、Drive 等资源。 | Python, Node.js, `npx`, `@larksuite/cli` |
 | `postgres-query` | PostgreSQL 临时连接、本机多 profile 管理、只读查询、表结构查看和查询计划分析。 | Python, `psycopg` 或 `psycopg2` |
 | `server-docker-logs-readonly` | 通过本地白名单脚本只读查询服务器日志，Docker 容器日志作为受控备用路径。 | PowerShell, Python, `paramiko` |
+| `web-demo-publisher` | 对话式生成、预览和发布 Web Demo、Slidev、Vite/静态站点到 `localhost:9999`，可选检测 cpolar 外网地址。 | PowerShell；Node.js 可选；cpolar 可选 |
 | `work-orchestrator` | 手动触发的轻量总控 Skill，用于先分析不修改、证据收集、影响评估和多 skill 编排。 | 无 |
 
 ## Quick Commands
@@ -68,6 +69,9 @@ irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install
 
 # 服务器日志只读排查
 irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill server-docker-logs-readonly
+
+# Web Demo 生成、预览和发布
+irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill web-demo-publisher
 
 # 手动总控编排
 irm https://raw.githubusercontent.com/mini2kai/codex-skills/main/scripts/install.ps1 | iex; Install-CodexSkill work-orchestrator
@@ -145,6 +149,7 @@ python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-gi
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/lark-cli-config
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/postgres-query
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/server-docker-logs-readonly
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/web-demo-publisher
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/codex-skills --path skills/work-orchestrator
 ```
 
@@ -200,6 +205,15 @@ server-docker-logs-readonly\scripts\targets.local.json
 
 用于维护本仓库，包括 skill 开发、格式校验、manifest 同步、README 更新、Windows/PowerShell 避坑和 GitHub 发布流程。
 
+### `web-demo-publisher`
+
+用于把网页、Slidev、Vite 应用或静态页面发布到固定本地端口 `localhost:9999`，并在本机 cpolar 可用时提取公网访问地址。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\web-demo-publisher\scripts\publish.ps1 -ProjectPath . -UseCpolar auto
+powershell -ExecutionPolicy Bypass -File .\web-demo-publisher\scripts\generate-from-template.ps1 -Template landing-product -DestinationPath .\demo-page
+```
+
 ## Repository Layout
 
 ```text
@@ -214,6 +228,7 @@ codex-skills/
 |   |-- lark-cli-config/
 |   |-- postgres-query/
 |   |-- server-docker-logs-readonly/
+|   |-- web-demo-publisher/
 |   `-- work-orchestrator/
 |-- scripts/
 |   `-- install.ps1

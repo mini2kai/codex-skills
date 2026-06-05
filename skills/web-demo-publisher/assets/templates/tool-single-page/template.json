@@ -1,0 +1,18 @@
+{
+  "name": "tool-single-page",
+  "displayName": "Single Page Tool",
+  "type": "static-html",
+  "requiresNode": false,
+  "entry": "index.html",
+  "publishMode": "static-server",
+  "bestFor": [
+    "单页小工具",
+    "计算器",
+    "查询表单",
+    "轻量仪表盘"
+  ],
+  "expectedFiles": [
+    "index.html"
+  ]
+}
+

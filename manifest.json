@@ -107,6 +107,25 @@
         "git optional",
         "openpyxl optional for --excel"
       ]
+    },
+    "web-demo-publisher": {
+      "path": "skills/web-demo-publisher",
+      "description": "对话式生成、预览和发布网页演示、Slidev、Vite/静态站点到 localhost:9999，并可选检测 cpolar 外网地址。",
+      "tags": [
+        "web",
+        "demo",
+        "publish",
+        "slidev",
+        "vite",
+        "cpolar",
+        "localhost",
+        "design-md"
+      ],
+      "requires": [
+        "powershell",
+        "node optional",
+        "cpolar optional"
+      ]
     }
   }
 }
