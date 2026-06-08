@@ -44,7 +44,7 @@ def make_status_table() -> Table:
     table.add_column("Skill", style="bold")
     table.add_column("状态")
     table.add_column("安装目录")
-    table.add_column("本地 commit")
-    table.add_column("线上 commit")
+    table.add_column("本地版本")
+    table.add_column("线上版本")
     table.add_column("安装时间")
     return table

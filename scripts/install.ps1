@@ -457,10 +457,14 @@ function Show-CodexSkillList {
 
         $manifest.skills.PSObject.Properties | ForEach-Object {
             $description = ""
+            $version = "0.1.0"
+            if ($null -ne $_.Value.version) {
+                $version = $_.Value.version
+            }
             if ($null -ne $_.Value.description) {
                 $description = $_.Value.description
             }
-            Write-Host ("- {0}：{1}" -f $_.Name, $description)
+            Write-Host ("- {0} ({1})：{2}" -f $_.Name, $version, $description)
         }
     }
     catch {
@@ -498,7 +502,7 @@ function Install-CodexSkill {
         if ([string]::IsNullOrWhiteSpace($Skill)) {
             Write-Host "缺少 Skill 名称。" -ForegroundColor Yellow
             Write-CodexSuggestion "查询可安装 skill：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill -List"
-            Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill codex-skill-dev"
+            Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill skill-dev"
             return
         }
 
@@ -586,7 +590,7 @@ function Install-CodexSkill {
     catch {
         Write-Host "安装失败：$($_.Exception.Message)" -ForegroundColor Red
         Write-CodexSuggestion "查询可安装 skill：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill -List"
-        Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill codex-skill-dev"
+        Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand -Repo $Repo -Ref $Ref); Install-CodexSkill skill-dev"
     }
 }
 
@@ -597,6 +601,6 @@ if (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
     else {
         Write-Host "缺少参数。" -ForegroundColor Yellow
         Write-CodexSuggestion "查询可安装 skill：$(Get-CodexInstallerCommand); Install-CodexSkill -List"
-        Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand); Install-CodexSkill codex-skill-dev"
+        Write-CodexSuggestion "安装示例：$(Get-CodexInstallerCommand); Install-CodexSkill skill-dev"
     }
 }

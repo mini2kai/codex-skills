@@ -15,18 +15,20 @@ class InstallRecord:
     repo: str
     ref: str
     commit: str
+    skill_version: str
     source_path: str
     installed_at: str
     manager: str
     manager_version: str
 
     @classmethod
-    def create(cls, name: str, repo: str, ref: str, commit: str, source_path: str) -> "InstallRecord":
+    def create(cls, name: str, repo: str, ref: str, commit: str, skill_version: str, source_path: str) -> "InstallRecord":
         return cls(
             name=name,
             repo=repo,
             ref=ref,
             commit=commit,
+            skill_version=skill_version,
             source_path=source_path,
             installed_at=datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
             manager=MANAGER_NAME,
@@ -39,6 +41,7 @@ class InstallRecord:
             "repo": self.repo,
             "ref": self.ref,
             "commit": self.commit,
+            "skillVersion": self.skill_version,
             "sourcePath": self.source_path,
             "installedAt": self.installed_at,
             "manager": self.manager,
@@ -71,4 +74,3 @@ def short_commit(commit: str | None) -> str:
     if not commit:
         return "-"
     return commit[:7]
-

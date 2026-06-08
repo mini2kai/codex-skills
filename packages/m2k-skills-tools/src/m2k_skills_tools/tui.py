@@ -18,7 +18,6 @@ from .local_config import find_local_config_files
 from .manifest import SkillManifest, read_remote_manifest
 from .opener import open_path
 from .paths import resolve_target_dir, short_path
-from .records import short_commit
 from .status import SkillStatus, find_status, get_skill_status
 from .ui import BANNER
 
@@ -131,7 +130,6 @@ class ToolState:
     skills_dir: str | None = None
     target_dir: Path | None = None
     manifest: SkillManifest | None = None
-    remote_commit: str | None = None
 
 
 class MessageScreen(ModalScreen[bool]):
@@ -254,7 +252,6 @@ class M2KSkillsApp(App[None]):
 
     def clear_cache(self) -> None:
         self.state.manifest = None
-        self.state.remote_commit = None
         self.doctor_cache = None
         self.doctor_current = {}
         self.status_cache = None
@@ -369,22 +366,9 @@ class M2KSkillsApp(App[None]):
             self.state.manifest = read_remote_manifest(self.state.repo, self.state.ref)
         return self.state.manifest
 
-    def remote_commit(self) -> str:
-        if self.state.remote_commit is None:
-            from .github import download_repo_archive, get_ref_commit_or_ref
-
-            self.state.remote_commit = get_ref_commit_or_ref(self.state.repo, self.state.ref)
-            if self.state.remote_commit == self.state.ref:
-                remote = download_repo_archive(self.state.repo, self.state.ref)
-                try:
-                    self.state.remote_commit = remote.commit
-                finally:
-                    remote.cleanup()
-        return self.state.remote_commit
-
     def statuses(self) -> list[SkillStatus]:
         assert self.state.target_dir is not None
-        return get_skill_status(self.load_manifest(), self.state.target_dir, self.remote_commit(), self.state.repo)
+        return get_skill_status(self.load_manifest(), self.state.target_dir, self.state.repo)
 
     @work(exclusive=True, thread=True, group="status")
     def preload_status_worker(self) -> None:
@@ -461,7 +445,7 @@ class M2KSkillsApp(App[None]):
         if self.status_cache is not None:
             self.render_status_table(self.status_cache)
             return
-        view = self.reset_view("安装状态", "正在后台读取远端 manifest、commit 和本机安装记录。")
+        view = self.reset_view("安装状态", "正在后台读取远端 manifest 和本机安装记录。")
         self.status_table_id = self.unique_id("status-table")
         table = DataTable(zebra_stripes=True, id=self.status_table_id)
         table.add_columns("Skill", "状态", "本地", "线上", "安装时间")
@@ -477,7 +461,7 @@ class M2KSkillsApp(App[None]):
         table = DataTable(zebra_stripes=True, id=self.status_table_id)
         table.add_columns("Skill", "状态", "本地", "线上", "安装时间")
         for row in rows:
-            table.add_row(row.name, row.state, short_commit(row.local_commit), short_commit(row.remote_commit), row.installed_at or "-")
+            table.add_row(row.name, row.state, row.local_version or "-", row.remote_version, row.installed_at or "-")
         view.mount(table)
         table.focus()
 
@@ -706,8 +690,9 @@ class M2KSkillsApp(App[None]):
                 f"名称: {row.name}",
                 f"状态: {row.state}",
                 f"安装目录: {short_path(row.path) if row.path.exists() else '-'}",
-                f"本地 commit: {row.local_commit or '-'}",
-                f"线上 commit: {row.remote_commit}",
+                f"本地版本: {row.local_version or '-'}",
+                f"线上版本: {row.remote_version}",
+                f"安装来源 commit: {row.local_commit or '-'}",
                 f"安装时间: {row.installed_at or '-'}",
                 f"标签: {', '.join(row.tags) if row.tags else '-'}",
                 f"依赖: {', '.join(row.requires) if row.requires else '-'}",

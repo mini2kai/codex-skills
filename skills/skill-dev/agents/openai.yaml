@@ -1,0 +1,7 @@
+interface:
+  display_name: "Skill Dev"
+  short_description: "中文 skill 开发、版本管理、验证发布流程"
+  default_prompt: "Use $skill-dev 帮我在 m2k-skills 仓库中开发、版本管理、验证并发布一个 skill。"
+
+policy:
+  allow_implicit_invocation: true

@@ -12,6 +12,7 @@ from .github import download_text
 class SkillInfo:
     name: str
     path: str
+    version: str
     description: str
     tags: list[str]
     requires: list[str]
@@ -39,6 +40,7 @@ def parse_manifest(text: str) -> SkillManifest:
         skills[name] = SkillInfo(
             name=name,
             path=str(raw.get("path") or f"skills/{name}"),
+            version=str(raw.get("version") or "0.1.0"),
             description=str(raw.get("description") or ""),
             tags=_as_list(raw.get("tags")),
             requires=_as_list(raw.get("requires")),
@@ -52,4 +54,3 @@ def read_local_manifest(repo_root: Path) -> SkillManifest:
 
 def read_remote_manifest(repo: str, ref: str) -> SkillManifest:
     return parse_manifest(download_text(repo, ref, "manifest.json"))
-

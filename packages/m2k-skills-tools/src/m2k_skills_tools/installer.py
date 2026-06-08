@@ -120,7 +120,7 @@ def install_skill(
             emit(9, total_steps, "无需恢复本地配置")
 
         emit(10, total_steps, "写入安装记录")
-        write_record(destination, InstallRecord.create(skill.name, repo, ref, remote.commit, remote_skill.path))
+        write_record(destination, InstallRecord.create(skill.name, repo, ref, remote.commit, remote_skill.version, remote_skill.path))
         return InstallResult(skill.name, destination, True, backup, restored, skipped, warnings)
     finally:
         remote.cleanup()

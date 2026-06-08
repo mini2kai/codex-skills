@@ -14,7 +14,6 @@ from .local_config import find_local_config_files
 from .manifest import SkillManifest, read_remote_manifest
 from .opener import open_path
 from .paths import resolve_target_dir, short_path
-from .records import short_commit
 from .status import SkillStatus, find_status, get_skill_status
 from .ui import console, make_status_table, print_banner, print_error, print_success, print_warning, section
 
@@ -28,7 +27,6 @@ class AppState:
         self.target_was_explicit = bool(target or skills_dir)
         self.target_dir = resolve_target_dir(target, skills_dir)
         self.manifest: SkillManifest | None = None
-        self.remote_commit: str | None = None
 
 
 def _load_manifest(state: AppState) -> SkillManifest:
@@ -37,22 +35,8 @@ def _load_manifest(state: AppState) -> SkillManifest:
     return state.manifest
 
 
-def _remote_commit(state: AppState) -> str:
-    if state.remote_commit is None:
-        from .github import download_repo_archive, get_ref_commit_or_ref
-
-        state.remote_commit = get_ref_commit_or_ref(state.repo, state.ref)
-        if state.remote_commit == state.ref:
-            remote = download_repo_archive(state.repo, state.ref)
-            try:
-                state.remote_commit = remote.commit
-            finally:
-                remote.cleanup()
-    return state.remote_commit
-
-
 def _statuses(state: AppState) -> list[SkillStatus]:
-    return get_skill_status(_load_manifest(state), state.target_dir, _remote_commit(state), state.repo)
+    return get_skill_status(_load_manifest(state), state.target_dir, state.repo)
 
 
 def _state(ctx: typer.Context) -> AppState:
@@ -119,7 +103,6 @@ def interactive(ctx: typer.Context) -> None:
             target, skills_dir = _select_target_dir()
             state.target_dir = resolve_target_dir(target, skills_dir)
             state.manifest = None
-            state.remote_commit = None
             console.print(f"当前目录: [cyan]{short_path(state.target_dir)}[/cyan]")
             continue
         if action == "status":
@@ -184,8 +167,8 @@ def show_status(state: AppState) -> None:
             row.name,
             f"[{status_style}]{row.state}[/{status_style}]",
             short_path(row.path) if row.path.exists() else "-",
-            short_commit(row.local_commit),
-            short_commit(row.remote_commit),
+            row.local_version or "-",
+            row.remote_version,
             row.installed_at or "-",
         )
     console.print(table)
@@ -266,8 +249,9 @@ def show_info(state: AppState, name: str) -> None:
             f"名称: {row.name}",
             f"状态: {row.state}",
             f"安装目录: {short_path(row.path) if row.path.exists() else '-'}",
-            f"本地 commit: {row.local_commit or '-'}",
-            f"线上 commit: {row.remote_commit}",
+            f"本地版本: {row.local_version or '-'}",
+            f"线上版本: {row.remote_version}",
+            f"安装来源 commit: {row.local_commit or '-'}",
             f"安装时间: {row.installed_at or '-'}",
             f"标签: {', '.join(row.tags) if row.tags else '-'}",
             f"依赖: {', '.join(row.requires) if row.requires else '-'}",

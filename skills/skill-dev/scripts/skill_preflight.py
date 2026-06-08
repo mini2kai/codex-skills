@@ -18,6 +18,8 @@ DISCOURAGED_FILES = {
     "QUICK_REFERENCE.md",
 }
 
+SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
+
 
 def emit(payload: dict[str, Any], exit_code: int = 0) -> None:
     print(json.dumps(payload, ensure_ascii=False, indent=2))
@@ -66,6 +68,19 @@ def scan_skill(repo_root: Path, skill: str) -> dict[str, Any]:
     check("skill_dir_exists", skill_dir.is_dir(), str(skill_dir))
     if not skill_dir.is_dir():
         return {"ok": False, "skill": skill, "checks": checks, "warnings": warnings, "errors": errors}
+
+    manifest_path = repo_root / "manifest.json"
+    if manifest_path.is_file():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+            entry = (manifest.get("skills") or {}).get(skill)
+            check("manifest_entry", isinstance(entry, dict), f"manifest.json 应包含 {skill}")
+            if isinstance(entry, dict):
+                check("manifest_version", bool(SEMVER_RE.match(str(entry.get("version") or ""))), "manifest version 必须是 x.y.z 格式")
+        except Exception as exc:
+            check("manifest_readable", False, f"manifest.json 读取失败：{exc}")
+    else:
+        check("manifest_exists", False, str(manifest_path))
 
     skill_md = skill_dir / "SKILL.md"
     check("skill_md_exists", skill_md.is_file(), str(skill_md))

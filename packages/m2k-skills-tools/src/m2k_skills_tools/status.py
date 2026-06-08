@@ -12,33 +12,37 @@ class SkillStatus:
     name: str
     state: str
     path: Path
+    local_version: str | None
+    remote_version: str
     local_commit: str | None
-    remote_commit: str
+    remote_commit: str | None
     installed_at: str | None
     description: str
     requires: list[str]
     tags: list[str]
 
 
-def get_skill_status(manifest: SkillManifest, target_dir: Path, remote_commit: str, repo: str) -> list[SkillStatus]:
+def get_skill_status(manifest: SkillManifest, target_dir: Path, repo: str, remote_commit: str | None = None) -> list[SkillStatus]:
     rows: list[SkillStatus] = []
     for name, skill in sorted(manifest.skills.items()):
         skill_dir = target_dir / name
         record = read_record(skill_dir) if skill_dir.exists() else None
+        remote_version = skill.version
+        local_version = None
+        local_commit = None
         if not skill_dir.exists():
             state = "未安装"
-            local_commit = None
             installed_at = None
         elif record is None:
             state = "已安装，无记录"
-            local_commit = None
             installed_at = None
         else:
+            local_version = record.get("skillVersion")
             local_commit = record.get("commit")
             installed_at = record.get("installedAt")
             if record.get("repo") and record.get("repo") != repo:
                 state = "来源不同"
-            elif local_commit == remote_commit:
+            elif local_version == remote_version:
                 state = "最新"
             else:
                 state = "有更新"
@@ -47,6 +51,8 @@ def get_skill_status(manifest: SkillManifest, target_dir: Path, remote_commit: s
                 name=name,
                 state=state,
                 path=skill_dir,
+                local_version=local_version,
+                remote_version=remote_version,
                 local_commit=local_commit,
                 remote_commit=remote_commit,
                 installed_at=installed_at,

@@ -2,7 +2,7 @@
 
 开发或更新 skill 后按顺序执行。
 
-下面命令里的 `<repo-root>` 指正在开发的 skills 仓库根目录。`skill_preflight.py` 和 `validate_skill_repo.py` 来自当前 `codex-skill-dev` skill 自身的 `scripts/` 目录，不要求目标仓库也安装 `codex-skill-dev`。
+下面命令里的 `<repo-root>` 指正在开发的 skills 仓库根目录。`skill_preflight.py` 和 `validate_skill_repo.py` 来自当前 `skill-dev` skill 自身的 `scripts/` 目录，不要求目标仓库也安装 `skill-dev`。
 
 ## 基础校验
 
@@ -23,6 +23,8 @@ python -m json.tool <repo-root>\manifest.json
 ```
 
 如果出现 `Unexpected UTF-8 BOM`，先转无 BOM UTF-8。
+
+同时确认目标 skill 条目包含 `version`，且为 `x.y.z` 格式；新增 skill 初始为 `0.1.0`，更新后按影响范围递增。
 
 ## Python 脚本语法检查
 
