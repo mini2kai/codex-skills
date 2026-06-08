@@ -25,6 +25,10 @@ custom_script/
 # Local server-docker-logs-readonly audit logs
 skills/server-docker-logs-readonly/logs/
 
+# Local private skill connection profiles
+skills/postgres-query/scripts/connections.local.json
+skills/server-docker-logs-readonly/scripts/targets.local.json
+
 # Local ai-worklog Excel ledger
 skills/ai-worklog/data/*.xlsx
 skills/ai-worklog/data/*.xlsm
