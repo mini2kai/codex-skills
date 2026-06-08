@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "m2k-skills-tools"
-version = "0.2.1"
+version = "0.3.0"
 description = "A pretty terminal manager for installing and updating M2K skills."
 readme = "README.md"
 requires-python = ">=3.10"

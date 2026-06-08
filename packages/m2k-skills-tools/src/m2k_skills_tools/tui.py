@@ -178,6 +178,7 @@ class M2KSkillsApp(App[None]):
         ("left", "focus_left", "左侧"),
         ("right", "focus_right", "右侧"),
         ("space", "toggle_select", "选择"),
+        ("/", "focus_filter", "筛选"),
         ("tab", "noop", ""),
     ]
 
@@ -200,6 +201,7 @@ class M2KSkillsApp(App[None]):
         self.picker_items: dict[str, SkillStatus] = {}
         self.selectable_skill_names: set[str] = set()
         self.selected_skill_names: set[str] = set()
+        self.filter_queries: dict[str, str] = {"manage": "", "info": "", "config": ""}
         if target or skills_dir:
             self.state.target_dir = resolve_target_dir(target, skills_dir)
             self.current_view = "home"
@@ -257,6 +259,7 @@ class M2KSkillsApp(App[None]):
         self.status_cache = None
         self.status_loading = False
         self.doctor_loading = False
+        self.filter_queries = {"manage": "", "info": "", "config": ""}
 
     def preload_after_target_selected(self) -> None:
         self.preload_status_worker()
@@ -347,6 +350,10 @@ class M2KSkillsApp(App[None]):
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if not event.input.id or not event.input.id.startswith("custom-target-input"):
+            if event.input.id and event.input.id.startswith("skill-filter-"):
+                mode = event.input.id.removeprefix("skill-filter-").split("-", 1)[0]
+                self.apply_skill_filter(mode, event.value)
+                return
             return
         try:
             self.state.target_dir = resolve_target_dir(None, event.value)
@@ -358,6 +365,37 @@ class M2KSkillsApp(App[None]):
         self.clear_cache()
         self.refresh_target_info()
         self.show_home()
+
+    def skill_matches_filter(self, row: SkillStatus, query: str) -> bool:
+        query = query.strip().lower()
+        if not query:
+            return True
+        haystack = " ".join(
+            [
+                row.name,
+                row.state,
+                row.description,
+                row.local_version or "",
+                row.remote_version,
+                " ".join(row.tags),
+                " ".join(row.requires),
+            ]
+        ).lower()
+        return query in haystack
+
+    def filtered_rows(self, rows: list[SkillStatus], mode: str) -> list[SkillStatus]:
+        query = self.filter_queries.get(mode, "")
+        return [row for row in rows if self.skill_matches_filter(row, query)]
+
+    def apply_skill_filter(self, mode: str, value: str) -> None:
+        if mode not in {"manage", "info", "config"}:
+            return
+        self.filter_queries[mode] = value.strip()
+        rows = self.status_cache or self.statuses()
+        if mode == "manage":
+            self.render_skill_picker(mode, rows, focus_filter=False)
+        else:
+            self.render_single_skill_picker(mode, rows, focus_filter=False)
 
     def require_target(self) -> bool:
         if self.state.target_dir is None:
@@ -495,22 +533,33 @@ class M2KSkillsApp(App[None]):
             return
         self.call_from_thread(self.handle_status_ready, rows)
 
-    def render_skill_picker(self, mode: str, rows: list[SkillStatus]) -> None:
+    def render_skill_picker(self, mode: str, rows: list[SkillStatus], focus_filter: bool = False) -> None:
         self.current_view = "manage"
-        view = self.reset_view("安装 / 更新 Skill", "第一项可全选可操作项；最新项不可选；Enter 开始。")
+        query = self.filter_queries.get("manage", "")
+        filtered = self.filtered_rows(rows, "manage")
+        view = self.reset_view("安装 / 更新 Skill", f"/ 筛选，Space 选择，Enter 开始；当前 {len(filtered)}/{len(rows)} 个。")
         self.picker_mode = "manage"
         self.picker_items = {}
         self.selectable_skill_names = set()
         self.selected_skill_names = set()
+        filter_input = Input(value=query, placeholder="筛选名称、状态、描述、标签、依赖后按 Enter", id=f"skill-filter-manage-{self.unique_id('input')}")
+        view.mount(filter_input)
+        if not filtered:
+            view.mount(Static("无匹配 Skill。清空筛选框后按 Enter 显示全部。"))
+            filter_input.focus()
+            return
         items: list[ListItem] = [ListItem(Label("□  全选 / 取消全选"), id="pick-all")]
-        for row in rows:
+        for row in filtered:
             self.picker_items[row.name] = row
             if self.is_selectable(row):
                 self.selectable_skill_names.add(row.name)
             items.append(self.build_picker_item(row.name))
         picker = ListView(*items, id=self.unique_id("skill-picker"))
         view.mount(picker)
-        picker.focus()
+        if focus_filter:
+            filter_input.focus()
+        else:
+            picker.focus()
 
     def is_selectable(self, row: SkillStatus) -> bool:
         return row.state != "最新"
@@ -669,13 +718,24 @@ class M2KSkillsApp(App[None]):
             return
         self.render_single_skill_picker(mode, self.status_cache)
 
-    def render_single_skill_picker(self, mode: str, rows: list[SkillStatus]) -> None:
+    def render_single_skill_picker(self, mode: str, rows: list[SkillStatus], focus_filter: bool = False) -> None:
         self.current_view = mode
-        view = self.reset_view("选择 Skill", "Enter 进入，b 返回首页。")
-        items = [ListItem(Label(self.format_single_skill_label(row)), id=f"{mode}-{row.name}") for row in rows]
+        query = self.filter_queries.get(mode, "")
+        filtered = self.filtered_rows(rows, mode)
+        view = self.reset_view("选择 Skill", f"/ 筛选，Enter 进入，b 返回首页；当前 {len(filtered)}/{len(rows)} 个。")
+        filter_input = Input(value=query, placeholder="筛选名称、状态、描述、标签、依赖后按 Enter", id=f"skill-filter-{mode}-{self.unique_id('input')}")
+        view.mount(filter_input)
+        if not filtered:
+            view.mount(Static("无匹配 Skill。清空筛选框后按 Enter 显示全部。"))
+            filter_input.focus()
+            return
+        items = [ListItem(Label(self.format_single_skill_label(row)), id=f"{mode}-{row.name}") for row in filtered]
         skill_list = ListView(*items, id=self.unique_id(f"single-{mode}"))
         view.mount(skill_list)
-        skill_list.focus()
+        if focus_filter:
+            filter_input.focus()
+        else:
+            skill_list.focus()
 
     def format_single_skill_label(self, row: SkillStatus) -> str:
         desc = row.description.strip() if row.description else "无描述。"
@@ -850,6 +910,13 @@ class M2KSkillsApp(App[None]):
         focusable = next(iter(self.query("#view ListView, #view DataTable, #view Input, #view Button")), None)
         if focusable is not None:
             focusable.focus()
+
+    def action_focus_filter(self) -> None:
+        if self.current_view not in {"manage", "info", "config"}:
+            return
+        filter_input = next(iter(self.query("#view Input")), None)
+        if filter_input is not None:
+            filter_input.focus()
 
     def action_noop(self) -> None:
         return
