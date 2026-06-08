@@ -299,6 +299,10 @@ class M2KSkillsApp(App[None]):
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         item_id = event.item.id or ""
+        if self.current_view == "manage" and (item_id == "pick-all" or item_id.startswith("pick-")):
+            self.confirm_and_run()
+            return
+
         if item_id.startswith("target-"):
             key = item_id.removeprefix("target-")
             if key == "custom":
