@@ -93,8 +93,9 @@ irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.p
 | `lark-cli-config` | 引导 Feishu/Lark CLI 授权配置，安全读取和维护文档、Wiki、表格、Drive 等资源。 | Python, Node.js, `npx`, `@larksuite/cli` |
 | `postgres-query` | PostgreSQL 临时连接、本机多 profile 管理、只读查询、表结构查看和查询计划分析。 | Python, `psycopg` 或 `psycopg2` |
 | `server-docker-logs-readonly` | 通过本地白名单脚本只读查询服务器日志，Docker 容器日志作为受控备用路径。 | PowerShell, Python, `paramiko` |
+| `git-trunk-workflow` | AI 协作短生命周期 Git 分支交付流程，管理 `ai/*` 临时分支、中文提交、远程 review 和合并前交接。 | Git, PowerShell |
 | `web-demo-publisher` | 对话式生成、预览和发布 Web Demo、Slidev、Vite/静态站点到 `localhost:9999`，可选检测 cpolar 外网地址。 | PowerShell；Node.js 可选；cpolar 可选 |
-| `work-orchestrator` | 手动触发的轻量总控 Skill，用于先分析不修改、证据收集、影响评估和多 skill 编排。 | 无 |
+| `work-orchestrator` | 手动触发的全链路总控 Skill，用于先分析不修改，动态检查可用 Skill，授权后编排实施、验证和交付收口。 | 无 |
 
 ## Quick Commands
 
@@ -114,10 +115,13 @@ irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.p
 # 服务器日志只读排查
 irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill server-docker-logs-readonly
 
+# AI 短分支 Git 交付
+irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill git-trunk-workflow
+
 # Web Demo 生成、预览和发布
 irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill web-demo-publisher
 
-# 手动总控编排
+# 动态总控编排
 irm https://raw.githubusercontent.com/mini2kai/m2k-skills/main/scripts/install.ps1 | iex; Install-CodexSkill work-orchestrator
 ```
 
@@ -193,6 +197,7 @@ python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-gi
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/lark-cli-config
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/postgres-query
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/server-docker-logs-readonly
+python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/git-trunk-workflow
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/web-demo-publisher
 python $HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py --repo mini2kai/m2k-skills --path skills/work-orchestrator
 ```
@@ -272,6 +277,7 @@ m2k-skills/
 |   |-- lark-cli-config/
 |   |-- postgres-query/
 |   |-- server-docker-logs-readonly/
+|   |-- git-trunk-workflow/
 |   |-- web-demo-publisher/
 |   `-- work-orchestrator/
 |-- scripts/

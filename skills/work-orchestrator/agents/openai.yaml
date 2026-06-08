@@ -1,7 +1,7 @@
 interface:
   display_name: "总控编排"
-  short_description: "手动触发的轻量分析、方案设计与专业 Skill 编排"
-  default_prompt: "Use $work-orchestrator 先分析不修改，先给证据、方案和验证步骤。"
+  short_description: "分析取证、动态编排、授权实施与交付收口"
+  default_prompt: "Use $work-orchestrator 先分析取证并出方案，授权后按本地可用 Skill 编排实施验证和交付收口。"
 
 policy:
   allow_implicit_invocation: false

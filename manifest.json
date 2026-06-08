@@ -84,15 +84,16 @@
     },
     "work-orchestrator": {
       "path": "skills/work-orchestrator",
-      "version": "0.1.0",
-      "description": "手动触发的轻量总控编排 Skill，用于先分析不修改、证据收集、方案设计、验证计划，并按能力灵活编排专业 Skill。",
+      "version": "0.2.0",
+      "description": "手动触发的中文全链路总控编排 Skill：先分析不修改，动态检查当前可用 Skill，完成证据收集、证据充分度判断、影响评估、方案设计、验证计划；用户授权后交接 Git 临时分支、代码实施、数据库/日志验证和交付收口。",
       "tags": [
         "orchestration",
         "planning",
         "diagnosis",
         "evidence",
-        "manual",
-        "workflow"
+        "dynamic-routing",
+        "workflow",
+        "handoff"
       ],
       "requires": [
         "none"
@@ -135,6 +136,26 @@
         "powershell",
         "node optional",
         "cpolar optional"
+      ]
+    },
+    "git-trunk-workflow": {
+      "path": "skills/git-trunk-workflow",
+      "version": "0.1.0",
+      "description": "AI 协作短生命周期 Git 分支交付流程：从 dev/uat/release/prod 来源分支创建 ai/* 临时分支，中文详细提交、可选远程 push、验证摘要和合并前交接；禁止破坏性 Git 操作。",
+      "tags": [
+        "git",
+        "branch",
+        "trunk-based",
+        "ai",
+        "delivery",
+        "commit",
+        "push",
+        "handoff",
+        "workflow"
+      ],
+      "requires": [
+        "git",
+        "powershell"
       ]
     }
   }
