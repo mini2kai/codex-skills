@@ -38,13 +38,22 @@ python -m py_compile <script1.py> <script2.py>
 
 如果修改了 `packages/m2k-skills-tools` 或需要引导 PyPI 发布，额外执行：
 
+先给用户本地调试命令，并等待用户确认功能没问题：
+
+```powershell
+uv run --project packages\m2k-skills-tools m2k-skills-tools --help
+uv run --project packages\m2k-skills-tools m2k-skills-tools --target codex
+```
+
+用户确认后才允许打包：
+
 ```powershell
 python -m pip index versions m2k-skills-tools
 uv build packages\m2k-skills-tools
 uvx twine check packages\m2k-skills-tools\dist\*
 ```
 
-确认 `dist/` 中只有当前版本的 `m2k_skills_tools-<version>.tar.gz` 和 `m2k_skills_tools-<version>-py3-none-any.whl`。如果存在旧版本 dist 文件，发布前先删除并重建。
+确认 `dist/` 中只有当前版本的 `m2k_skills_tools-<version>.tar.gz` 和 `m2k_skills_tools-<version>-py3-none-any.whl`。如果存在旧版本 dist 文件，发布前先删除并重建。上传 PyPI 前还要再次等待用户确认。
 
 ## skill 预检脚本
 

@@ -50,6 +50,7 @@ description: 中文 Codex skill 开发、更新、版本管理、验证、GitHub
    - `python -m json.tool manifest.json`。
    - Python 脚本跑 `py_compile`。
    - 跑关键脚本的错误路径测试。
+   - 如果修改了 `packages/m2k-skills-tools`，先给用户本地调试命令并等待确认，不要直接打 PyPI 包。
 8. 清理验证副产物。
    - 删除目标 skill 内的 `__pycache__`。
    - 删除前必须确认路径在目标 skill 目录下。
@@ -57,11 +58,13 @@ description: 中文 Codex skill 开发、更新、版本管理、验证、GitHub
    - 运行 `git diff --stat`。
    - 对关键文件运行 `git diff`。
 10. 提交和推送。
+   - `git commit` 和 `git push` 必须先向用户说明变更、验证结果和目标分支，等用户明确确认后再执行。
    - `git add`、`git commit`、`git push origin main` 分开执行。
    - 提交信息必须使用中文，简要写清楚修改内容。
    - 遇到 `.git/index.lock` 权限或 push 网络问题时，按审批流程提权重试。
    - 完成后运行 `git status --short` 确认干净。
 11. PyPI 发布提醒。
+   - PyPI 打包、`uv build`、`uv publish` 都必须先让用户本地调试并确认；用户未确认前只给命令，不打包、不上传。
    - 只要涉及 `m2k-skills-tools` 包版本，就在最终反馈中提醒用户：先设置 `$env:UV_PUBLISH_TOKEN = "pypi-你的新PyPI-token"`，再执行 `uv publish`。
    - 命令必须使用当前版本文件，例如 `dist\m2k_skills_tools-0.2.0.tar.gz` 和 `dist\m2k_skills_tools-0.2.0-py3-none-any.whl`。
    - 不要把示例停留在旧版本 `0.1.0`；发布前用 `uvx twine check packages\m2k-skills-tools\dist\*` 校验。
@@ -114,6 +117,7 @@ description: 中文 Codex skill 开发、更新、版本管理、验证、GitHub
 - 新增或修改的 skill。
 - 涉及的 skill 版本变化。
 - 涉及的 PyPI 包版本变化，以及 `UV_PUBLISH_TOKEN` + `uv publish` 当前版本命令。
+- 本地调试命令，以及是否已获得用户确认再提交、推送、打包或上传。
 - 同步过的仓库文件。
 - 运行过的验证和结果。
 - commit hash 和 push 结果。

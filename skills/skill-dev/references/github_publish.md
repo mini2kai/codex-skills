@@ -17,6 +17,8 @@ git diff -- README.md manifest.json scripts/install.ps1
 
 ## 暂存
 
+暂存前先向用户说明将暂存的文件范围；只有用户要求提交或确认继续时才执行。
+
 PowerShell 中分步执行：
 
 ```powershell
@@ -35,6 +37,8 @@ Unable to create .git/index.lock: Permission denied
 
 提交信息必须使用中文，并简要写清楚修改内容。
 
+执行 `git commit` 前必须先汇总：变更范围、关键验证结果、提交信息。用户明确确认后再提交。
+
 ```powershell
 git commit -m "新增 <skill-name> skill"
 ```
@@ -46,6 +50,8 @@ git commit -m "更新 <skill-name> skill 指引"
 ```
 
 ## 推送
+
+执行 `git push` 前必须明确推送目标，例如 `origin main`。用户明确确认后再推送。
 
 ```powershell
 git push origin main
@@ -70,6 +76,15 @@ git log -1 --oneline
 ## PyPI 发布引导
 
 如果本次提交涉及 `packages/m2k-skills-tools` 或用户要求提交 PyPI，GitHub 推送后继续引导 PyPI 发布。PyPI 是为 skill 安装、更新、版本对比服务的管理器发布渠道。
+
+PyPI 发布必须分三段走：先本地调试，用户确认没问题后再构建，构建校验通过且用户再次确认后再上传。用户未确认前不要执行 `uv build` 或 `uv publish`。
+
+本地调试命令：
+
+```powershell
+uv run --project packages\m2k-skills-tools m2k-skills-tools --help
+uv run --project packages\m2k-skills-tools m2k-skills-tools --target codex
+```
 
 发布前检查：
 
