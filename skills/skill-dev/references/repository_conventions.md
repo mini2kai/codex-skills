@@ -35,6 +35,26 @@ skills/<skill-name>/
 - 改名、移除能力、改变默认行为或破坏兼容的修改递增 major，例如 `0.2.0` -> `1.0.0`。
 - 安装器的“本地/线上”对比基于 skill `version`；commit 仅作为安装来源追踪信息保留。
 
+## PyPI 管理器版本
+
+`packages/m2k-skills-tools` 是服务于 skill 安装、更新、状态对比的 PyPI 管理器。修改该包后必须维护包版本，不能复用已发布版本。
+
+- PyPI 已发布版本不能覆盖；发布前用 `python -m pip index versions m2k-skills-tools` 查看现有版本。
+- 包版本同步使用：`python skills\skill-dev\scripts\sync_package_version.py --repo-root . --bump patch|minor|major`。
+- 该脚本会同步 `pyproject.toml`、`src/m2k_skills_tools/__init__.py`、`uv.lock`。
+- 构建前删除旧 `dist/`，避免误上传旧版本文件。
+- 构建后固定提醒用户使用 `UV_PUBLISH_TOKEN` 和当前版本文件执行 `uv publish`。
+
+PyPI 上传提醒模板：
+
+```powershell
+$env:UV_PUBLISH_TOKEN = "pypi-你的新PyPI-token"
+uv publish C:\Users\lzsj\all\codex-skills\packages\m2k-skills-tools\dist\m2k_skills_tools-<version>.tar.gz C:\Users\lzsj\all\codex-skills\packages\m2k-skills-tools\dist\m2k_skills_tools-<version>-py3-none-any.whl
+Remove-Item Env:\UV_PUBLISH_TOKEN
+```
+
+其中 `<version>` 必须替换为当前包版本，禁止继续使用旧版本示例路径，例如 `0.1.0`。
+
 ## 安装器约定
 
 安装器默认从 `manifest.json` 读取可安装 skill。新增 skill 后，`Install-CodexSkill -List` 应展示中文说明。

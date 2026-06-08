@@ -34,6 +34,18 @@ python -m py_compile <script1.py> <script2.py>
 
 检查后清理 `__pycache__`。
 
+## PyPI 包校验
+
+如果修改了 `packages/m2k-skills-tools` 或需要引导 PyPI 发布，额外执行：
+
+```powershell
+python -m pip index versions m2k-skills-tools
+uv build packages\m2k-skills-tools
+uvx twine check packages\m2k-skills-tools\dist\*
+```
+
+确认 `dist/` 中只有当前版本的 `m2k_skills_tools-<version>.tar.gz` 和 `m2k_skills_tools-<version>-py3-none-any.whl`。如果存在旧版本 dist 文件，发布前先删除并重建。
+
 ## skill 预检脚本
 
 ```powershell

@@ -44,19 +44,21 @@
     },
     "skill-dev": {
       "path": "skills/skill-dev",
-      "version": "0.2.0",
-      "description": "中文 Codex skill 开发、验证、版本管理、仓库同步和 GitHub 发布流程；沉淀 Windows/PowerShell、编码、校验和常见错误避坑。",
+      "version": "0.2.1",
+      "description": "中文 Codex skill 开发、验证、版本管理、仓库同步和 GitHub/PyPI 发布流程；沉淀 Windows/PowerShell、编码、校验、PyPI 上传和常见错误避坑。",
       "tags": [
         "codex",
         "skill",
         "development",
         "validation",
         "github",
-        "powershell"
+        "powershell",
+        "pypi"
       ],
       "requires": [
         "python",
-        "git"
+        "git",
+        "uv"
       ]
     },
     "server-docker-logs-readonly": {

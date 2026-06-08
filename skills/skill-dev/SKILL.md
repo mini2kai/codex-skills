@@ -1,19 +1,20 @@
 ---
 name: skill-dev
-description: 中文 Codex skill 开发、更新、版本管理、验证和 GitHub 发布流程。Use when the user asks to create, update, standardize, validate, version, package, document, install, publish, or sync a skill in the m2k-skills repository; when manifest.json, README.md, install.ps1, agents/openai.yaml, references, scripts, UTF-8 encoding, Windows PowerShell pitfalls, validation, git commit, or GitHub push are involved.
+description: 中文 Codex skill 开发、更新、版本管理、验证、GitHub 和 PyPI 发布流程。Use when the user asks to create, update, standardize, validate, version, package, document, install, publish, or sync a skill in the m2k-skills repository; when manifest.json, README.md, install.ps1, m2k-skills-tools, PyPI, uv publish, agents/openai.yaml, references, scripts, UTF-8 encoding, Windows PowerShell pitfalls, validation, git commit, or GitHub push are involved.
 ---
 
 # Skill Dev
 
 ## 触发规则
 
-遇到创建、更新、规范化、验证、安装说明、GitHub 同步、发布 Codex skill 的任务时，先使用这个 skill。
+遇到创建、更新、规范化、验证、安装说明、GitHub 同步、发布 Codex skill 或发布服务于 skill 的 PyPI 管理器时，先使用这个 skill。
 
 典型场景：
 - 新增 `skills/<skill-name>/`。
 - 修改已有 skill 的 `SKILL.md`、`agents/openai.yaml`、`references/`、`scripts/`。
 - 要求“中文文档和交互”“按本仓库 skill 风格整理”。
 - 同步 `manifest.json`、`README.md`、`scripts/install.ps1`，并维护 skill 独立版本号。
+- 修改 `packages/m2k-skills-tools` 或需要引导 `uv publish` 发布 PyPI 包。
 - 运行 `quick_validate.py`、检查 UTF-8 BOM、清理 `__pycache__`、提交并推送 GitHub。
 - 总结开发过程中踩坑并沉淀到 skill。
 
@@ -37,6 +38,8 @@ description: 中文 Codex skill 开发、更新、版本管理、验证和 GitHu
    - 每个 skill 必须有独立 `version`，新 skill 从 `0.1.0` 开始。
    - 修改已有 skill 时根据影响范围自动递增版本：文档/提示/小修用 patch，新增兼容能力或脚本参数用 minor，改名、移除能力或破坏性行为变化用 major。
    - 安装器的本地/线上对比使用 `version`，commit 只保留为安装来源追踪信息。
+   - 如果修改影响 `m2k-skills-tools` 这个 PyPI 管理器，使用 `sync_package_version.py` 自动同步包版本。
+   - PyPI 包是为 skill 安装、更新、状态对比服务的；发布前必须提醒用户使用当前版本的 dist 文件，不要上传旧版本文件。
    - 更新 `README.md` 的安装命令、列表、结构示例。
    - 必要时更新 `scripts/install.ps1` 的示例提示。
 6. 编码处理。
@@ -58,6 +61,11 @@ description: 中文 Codex skill 开发、更新、版本管理、验证和 GitHu
    - 提交信息必须使用中文，简要写清楚修改内容。
    - 遇到 `.git/index.lock` 权限或 push 网络问题时，按审批流程提权重试。
    - 完成后运行 `git status --short` 确认干净。
+11. PyPI 发布提醒。
+   - 只要涉及 `m2k-skills-tools` 包版本，就在最终反馈中提醒用户：先设置 `$env:UV_PUBLISH_TOKEN = "pypi-你的新PyPI-token"`，再执行 `uv publish`。
+   - 命令必须使用当前版本文件，例如 `dist\m2k_skills_tools-0.2.0.tar.gz` 和 `dist\m2k_skills_tools-0.2.0-py3-none-any.whl`。
+   - 不要把示例停留在旧版本 `0.1.0`；发布前用 `uvx twine check packages\m2k-skills-tools\dist\*` 校验。
+   - 发布后提醒清理环境变量：`Remove-Item Env:\UV_PUBLISH_TOKEN`。
 
 ## 写作风格
 
@@ -88,6 +96,7 @@ description: 中文 Codex skill 开发、更新、版本管理、验证和 GitHu
 
 - 预检单个 skill：`python scripts/skill_preflight.py --repo-root <repo-root> --skill <skill-name>`
 - 同步 manifest：`python scripts/sync_manifest.py --repo-root <repo-root> --skill <skill-name> --description "..." --tags a,b --requires python --bump patch`
+- 同步 PyPI 包版本：`python scripts/sync_package_version.py --repo-root <repo-root> --bump minor`
 - 仓库级校验：`python scripts/validate_skill_repo.py --repo-root <repo-root> --skill <skill-name>`
 
 ## 安全底线
@@ -104,6 +113,7 @@ description: 中文 Codex skill 开发、更新、版本管理、验证和 GitHu
 完成后只报告：
 - 新增或修改的 skill。
 - 涉及的 skill 版本变化。
+- 涉及的 PyPI 包版本变化，以及 `UV_PUBLISH_TOKEN` + `uv publish` 当前版本命令。
 - 同步过的仓库文件。
 - 运行过的验证和结果。
 - commit hash 和 push 结果。
