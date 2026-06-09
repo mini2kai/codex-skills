@@ -1,4 +1,4 @@
-display_name: Web Demo Publisher
-short_description: 生成、预览并发布 Web Demo 到本地和外网
-default_prompt: $web-demo-publisher 生成一个可运行的网页演示，并发布到 localhost:9999。
-
+interface:
+  display_name: "web-demo-publisher"
+  short_description: "生成、预览并发布 Web Demo 到本地和外网"
+  default_prompt: "Use $web-demo-publisher 生成一个可运行的网页演示，并发布到 localhost:9999。"

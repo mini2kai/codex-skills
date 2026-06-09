@@ -1,5 +1,5 @@
 interface:
-  display_name: "AI短分支交付"
+  display_name: "git-trunk-workflow"
   short_description: "管理 AI 临时分支、中文提交与合并前交接"
   default_prompt: "Use $git-trunk-workflow 从当前来源分支创建 ai/* 临时分支，提交本次任务并输出合并前交接。"
 

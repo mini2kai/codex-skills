@@ -4,7 +4,7 @@
   "skills": {
     "lark-cli-config": {
       "path": "skills/lark-cli-config",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "分步引导 lark-cli 授权配置，封装 Feishu document/wiki/sheet 安全操作；sheet/doc 只读默认快速读取并本地清洗。",
       "tags": [
         "feishu",
@@ -24,7 +24,7 @@
     },
     "postgres-query": {
       "path": "skills/postgres-query",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "引导式 PostgreSQL 临时连接和本机多 profile 配置、只读查询、表结构查看和查询计划分析；风险操作只生成 SQL 不执行。",
       "tags": [
         "postgresql",
@@ -44,7 +44,7 @@
     },
     "skill-dev": {
       "path": "skills/skill-dev",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "description": "中文 Codex skill 开发、验证、版本管理、仓库同步和 GitHub/PyPI 发布流程；沉淀 Windows/PowerShell、编码、校验、确认门槛、PyPI 上传和常见错误避坑。",
       "tags": [
         "codex",
@@ -64,7 +64,7 @@
     },
     "server-docker-logs-readonly": {
       "path": "skills/server-docker-logs-readonly",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "本地脚本白名单模式按本地配置查询服务器绝对目录日志，并保留 Docker 日志读取作为备用方案。",
       "tags": [
         "server",
@@ -84,7 +84,7 @@
     },
     "work-orchestrator": {
       "path": "skills/work-orchestrator",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "手动触发的中文全链路总控编排 Skill：先分析不修改，动态检查当前可用 Skill，完成证据收集、证据充分度判断、影响评估、方案设计、验证计划；用户授权后交接 Git 临时分支、代码实施、数据库/日志验证和交付收口。",
       "tags": [
         "orchestration",
@@ -101,7 +101,7 @@
     },
     "ai-worklog": {
       "path": "skills/ai-worklog",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "跨机器统计 Codex、Claude Code/CLI 等 AI 协作记录，生成工作日报、报工摘要和耗时表。",
       "tags": [
         "ai",
@@ -120,7 +120,7 @@
     },
     "web-demo-publisher": {
       "path": "skills/web-demo-publisher",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "对话式生成、预览和发布网页演示、Slidev、Vite/静态站点到 localhost:9999，并可选检测 cpolar 外网地址。",
       "tags": [
         "web",
@@ -140,7 +140,7 @@
     },
     "git-trunk-workflow": {
       "path": "skills/git-trunk-workflow",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "AI 协作短生命周期 Git 分支交付流程：从 dev/uat/release/prod 来源分支创建 ai/* 临时分支，中文详细提交、可选远程 push、验证摘要和合并前交接；禁止破坏性 Git 操作。",
       "tags": [
         "git",
