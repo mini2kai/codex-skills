@@ -24,8 +24,8 @@
     },
     "postgres-query": {
       "path": "skills/postgres-query",
-      "version": "0.1.1",
-      "description": "引导式 PostgreSQL 临时连接和本机多 profile 配置、只读查询、表结构查看和查询计划分析；风险操作只生成 SQL 不执行。",
+      "version": "0.2.0",
+      "description": "PostgreSQL 只读查询、结构查看、查询计划分析。代码围栏强制 SQL 安全检查、行数/超时硬上限、凭据脱敏和审计留痕；风险操作只生成 SQL 不执行。",
       "tags": [
         "postgresql",
         "pgsql",
@@ -44,8 +44,8 @@
     },
     "skill-dev": {
       "path": "skills/skill-dev",
-      "version": "0.2.3",
-      "description": "中文 Codex skill 开发、验证、版本管理、仓库同步和 GitHub/PyPI 发布流程；沉淀 Windows/PowerShell、编码、校验、确认门槛、PyPI 上传和常见错误避坑。",
+      "version": "0.3.0",
+      "description": "围栏模型 Skill 开发规范：识别围栏与自由区、独立安全模块、测试、DESIGN.md、版本管理和 GitHub/PyPI 发布流程。",
       "tags": [
         "codex",
         "skill",
