@@ -1,39 +1,41 @@
-# 事故案例库
+# Incident Case Library
 
-记录 skill 开发和 AI 协作过程中发生的真实事故，提炼经验并推动围栏化。
+[中文版](./README_cn.md)
 
-## 文档格式
+Records real incidents during skill development and AI collaboration, extracts lessons, and drives fence implementation.
 
-每个事故一个文件，命名格式：`YYYY-MM-DD-简短描述.md`
+## Document Format
 
-文件结构：
+One file per incident. Naming: `YYYY-MM-DD-short-description.md` (English) + `YYYY-MM-DD-short-description_cn.md` (Chinese)
+
+File structure:
 
 ```markdown
-# 事故标题
+# Incident Title
 
-## 发生了什么
+## What Happened
 
-简要描述事故现象。
+Brief description of the incident.
 
-## 根因
+## Root Cause
 
-为什么会发生。
+Why it happened.
 
-## 影响
+## Impact
 
-造成了什么后果。
+What consequences resulted.
 
-## 经验
+## Lessons
 
-从这次事故中得出的原则或判断标准。
+Principles or criteria derived from this incident.
 
-## 围栏化
+## Fencing
 
-这次事故推动了什么代码级的检查或拦截？如果尚未围栏化，说明原因和计划。
+What code-level checks or blocks did this incident drive? If not yet fenced, explain why and the plan.
 ```
 
-## 使用方式
+## Usage
 
-- 每次遇到"规则被跳过且造成实际问题"的情况，记录一条
-- 定期回顾：哪些经验还只停留在文档层面？能否升级为代码围栏？
-- design_philosophy.md 引用本目录作为原则的实证来源
+- Record an entry each time a rule is skipped and causes a real problem
+- Periodic review: which lessons are still only at the documentation level? Can they be upgraded to code fences?
+- design_philosophy.md references this directory as empirical source for principles

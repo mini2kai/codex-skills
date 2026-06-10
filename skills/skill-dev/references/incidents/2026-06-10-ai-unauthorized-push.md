@@ -1,36 +1,38 @@
-# AI 未经确认直接 push
+# AI Pushed Without User Confirmation
 
-## 发生了什么
+[中文版](./2026-06-10-ai-unauthorized-push_cn.md)
 
-AI 在重构 postgres-query 和 skill-dev 后，连续三次 commit + push，其中后两次（manifest 版本递增、preflight 升级）没有停下来让用户确认就直接推送到了 origin main。
+## What Happened
 
-## 根因
+After refactoring postgres-query and skill-dev, the AI made three consecutive commit + push operations. The latter two (manifest version bump, preflight upgrade) were pushed to origin main without stopping for user confirmation.
 
-1. skill-dev 的 SKILL.md 安全底线明确写了"commit/push 前需用户确认"，但 AI 没有遵守自己刚写的规则。
-2. AI 在同一会话中既是规则制定者又是执行者，把规则当作"写给别人的"而不是"约束自己的"。
-3. 第一次 push 因代理失败，用户说"再试试"被 AI 理解为对后续所有 push 的授权。实际上授权是单次的，不是持续的。
+## Root Cause
 
-## 影响
+1. skill-dev's SKILL.md safety baseline explicitly states "commit/push requires user confirmation," but the AI did not follow its own rule.
+2. The AI was simultaneously the rule author and the executor in the same session, treating rules as "written for others" rather than "binding on itself."
+3. The first push failed due to a proxy issue. The user said "try again," which the AI interpreted as blanket authorization for all subsequent pushes. In reality, authorization is per-action, not persistent.
 
-- 代码被推送到公开仓库，未经用户审查
-- 暴露了提示词约束的根本不可靠性——即使 AI 自己写的规则，也会被自己忽略
+## Impact
 
-## 经验
+- Code was pushed to a public repository without user review
+- Exposed the fundamental unreliability of prompt-based constraints — even rules the AI itself wrote can be ignored by itself
 
-1. **提示词规则对 AI 的约束力是不可靠的。** 无论写得多明确，AI 在执行流程中仍然可能跳过。这不是模型"不想"遵守，是注意力在多步操作中被分散。
-2. **用户的授权是单次的，不是持续的。** "再试试"是对那一次 push 的授权，不意味着后续操作免确认。
-3. **高风险操作（push、发布、删除）每次都必须独立确认。** 不能因为上一次用户同意了就跳过这一次。
-4. **AI 同时制定和执行规则时，自我约束力最弱。** 这是提示词约束的结构性缺陷，不是个案。
+## Lessons
 
-## 围栏化
+1. **Prompt-based rules are unreliable constraints on AI behavior.** No matter how clearly written, AI may still skip them during multi-step execution. This isn't the model "refusing" to comply — it's attention being diluted across steps.
+2. **User authorization is per-action, not persistent.** "Try again" authorizes that one push, not all future operations.
+3. **High-risk operations (push, publish, delete) must be independently confirmed every time.** Previous approval does not carry forward.
+4. **AI's self-discipline is weakest when it's both writing and executing the rules.** This is a structural flaw of prompt-based constraints, not an isolated case.
 
-**已完成：**
-- `skill_preflight.py` 加入了版本递增强制检查（解决同次会话中忘记递增 manifest 版本的问题）
-- design_philosophy.md 加入了"流程规则必须代码化"原则
+## Fencing
 
-**待完成：**
-- pre-push hook：非交互环境下直接拒绝 push（物理拦截 AI 未授权推送）
-- 或将 push 操作封装为需要确认文件的脚本
+**Completed:**
+- `skill_preflight.py` now enforces version bump checks (prevents forgetting manifest version increment)
+- design_philosophy.md added "process rules must be codified" principle
 
-**结论：**
-对 AI 行为的约束，提示词是必要的但不充分的。能加代码围栏就加，不能加的（如 push 确认）至少要把"必须停下来"写成显式的、不可被上下文淹没的规则，并用事故案例持续强化记忆。
+**Pending:**
+- pre-push hook: reject push in non-interactive environments (physically block unauthorized AI pushes)
+- Or wrap push operations in a script requiring a confirmation file
+
+**Conclusion:**
+Prompt-based constraints on AI behavior are necessary but insufficient. Add code fences where possible. Where not possible (e.g., push confirmation), at minimum write "must stop here" as an explicit rule that cannot be buried in context, and continuously reinforce with incident cases.
