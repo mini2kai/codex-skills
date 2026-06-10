@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import argparse
 import re
-from pg_common import add_connection_args, assert_read_only, connect, emit, fetch_all, mask_literals_and_comments, redact, resolve_dsn
+from pg_common import add_connection_args, audit, connect, emit, fetch_all, redact, resolve_dsn
+from sql_guard import assert_read_only, mask_literals_and_comments
 
 
 def explain_sql(sql: str) -> str:
@@ -38,6 +39,7 @@ def main() -> None:
     try:
         sql = explain_sql(args.sql)
     except ValueError as exc:
+        audit("blocked", sql=args.sql, reason=str(exc))
         emit({"ok": False, "error": "unsafe_sql", "message": str(exc)}, 2)
 
     dsn = resolve_dsn(args)
@@ -46,10 +48,12 @@ def main() -> None:
         _, rows = fetch_all(conn, sql)
         plan_lines = [str(row[0]) for row in rows]
     except Exception as exc:
+        audit("explain_failed", connection=dsn, sql=args.sql, error=str(exc))
         emit({"ok": False, "error": "explain_failed", "message": str(exc), "dsn": redact(dsn)}, 3)
     finally:
         conn.close()
 
+    audit("explain", connection=dsn, sql=args.sql)
     emit(
         {
             "ok": True,

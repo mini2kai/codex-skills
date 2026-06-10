@@ -29,6 +29,9 @@ skills/server-docker-logs-readonly/logs/
 skills/postgres-query/scripts/connections.local.json
 skills/server-docker-logs-readonly/scripts/targets.local.json
 
+# Local audit logs
+*.local.jsonl
+
 # Local ai-worklog Excel ledger
 skills/ai-worklog/data/*.xlsx
 skills/ai-worklog/data/*.xlsm

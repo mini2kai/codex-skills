@@ -1,7 +1,0 @@
-interface:
-  display_name: "postgres-query"
-  short_description: "PostgreSQL 多 profile 只读查询"
-  default_prompt: "Use $postgres-query 引导我配置或选择 PostgreSQL 本机连接 profile，并执行安全的只读查询或表结构查看。"
-
-policy:
-  allow_implicit_invocation: true

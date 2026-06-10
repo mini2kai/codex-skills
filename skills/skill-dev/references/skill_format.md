@@ -14,71 +14,78 @@ description: 清晰说明能力和触发场景。Use when ...
 要求：
 
 - `name` 与目录名一致。
-- `description` 必须包含“什么时候使用”，因为这是触发依据。
+- `description` 必须包含"什么时候使用"，因为这是触发依据。
 - 主体用中文，命令和参数保持英文。
-- 不在正文写空泛的“when to use”，触发信息应放进 `description`。
-- 主体控制在可读范围内，细节放 `references/`。
 
-推荐结构：
+推荐结构（围栏式）：
 
 ```text
-## 触发规则
-## 执行入口
-## 标准流程
-## 规则导航
-## 安全底线
-## 最终反馈
+## 围栏（代码强制，不可绕过）
+## 脚本入口
+## 围栏以内（AI 自由发挥）
 ```
 
-## agents/openai.yaml
+目标行数：40-60 行。超过 100 行需要审视是否在教 AI 做事。
 
-推荐格式：
+不写：
+- 分步流程（模型会判断）
+- 引导话术（模型会沟通）
+- 错误处理分支（脚本输出已自描述）
+- 触发判断逻辑（模型会路由）
 
-```yaml
-interface:
-  display_name: "Skill Display Name"
-  short_description: "中文简短说明，25-64 字符"
-  default_prompt: "Use $skill-name 中文默认提示。"
+细节放 `references/`，按需读取。
 
-policy:
-  allow_implicit_invocation: true
-```
+## DESIGN.md
 
-注意：
+每个 skill 根目录放一个 `DESIGN.md`，给人看：
 
-- `default_prompt` 必须保留 `$skill-name`。
-- PowerShell 会展开 `$xxx`，写完必须检查是否被误改。
-- `short_description` 长度不足会导致初始化失败。
+- 解决什么问题
+- 设计理念
+- 实现思路
+- 什么被刻意删掉了
+- 文件结构和职责划分
+
+随 skill 更新同步维护。
 
 ## references
 
-用于按需读取的细节资料。每个文件直接由 `SKILL.md` 引用，不要深层嵌套。
+用于按需读取的事实性资料。
 
 适合放：
+- 配置格式说明（纯事实）
+- 优先级列表
+- 协议/接口约定
 
-- 仓库规范。
-- 错误处理表。
-- 长流程清单。
-- 常用命令和模板。
+不适合放：
+- 教 AI 怎么做的流程
+- 话术模板
+- 常见命令列表（模型知道）
 
 ## scripts
 
 用于可重复、容易出错或需要结构化输出的操作。
 
 要求：
+- 输出 JSON
+- 面向用户的 `message`、`next_action` 用中文
+- 参数名、JSON key、命令保持英文
+- 安全逻辑用代码强制，不依赖调用方自觉
+- 有围栏逻辑的脚本必须有对应测试
 
-- 输出 JSON。
-- 面向用户的 `message`、`next_action` 用中文。
-- 参数名、JSON key、命令保持英文。
-- 不执行高风险操作，除非 skill 明确要求并有确认流程。
+围栏代码设计原则：
+- 零外部依赖，可独立复用
+- 硬上限兜底（行数、超时、大小）
+- 凭据在输出路径上脱敏
+- 操作留审计日志
+
+## agents/
+
+已废弃。不再创建 `agents/openai.yaml`。平台特定配置不进 skill。
 
 ## 不要创建
-
-skill 内不要创建这些额外说明文档：
 
 - `README.md`
 - `CHANGELOG.md`
 - `INSTALLATION_GUIDE.md`
-- `QUICK_REFERENCE.md`
-
-这些内容应进入 `SKILL.md` 或 `references/`。
+- 话术模板文件
+- 常用命令/SQL 模板文件

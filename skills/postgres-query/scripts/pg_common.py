@@ -1,39 +1,32 @@
-"""PostgreSQL 查询 skill 的共享工具。"""
+"""PostgreSQL 查询 skill 的共享工具：连接管理、输出格式和审计日志。"""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
-BANNED_TOKENS = {
-    "INSERT",
-    "UPDATE",
-    "DELETE",
-    "TRUNCATE",
-    "DROP",
-    "ALTER",
-    "CREATE",
-    "GRANT",
-    "REVOKE",
-    "VACUUM",
-    "CALL",
-    "DO",
-    "COPY",
-    "MERGE",
-    "REFRESH",
-    "LOCK",
-    "SETVAL",
-    "NEXTVAL",
-}
-
-ALLOWED_START = {"SELECT", "WITH", "SHOW", "EXPLAIN"}
+from sql_guard import (
+    ALLOWED_START,
+    BANNED_TOKENS,
+    MAX_ROWS,
+    MAX_TIMEOUT,
+    assert_read_only,
+    clamp_timeout,
+    first_keyword,
+    limited_sql,
+    mask_literals_and_comments,
+    normalize_sql,
+)
 
 CONNECTION_CONFIG = Path(__file__).resolve().parent / "connections.local.json"
+AUDIT_LOG = Path(__file__).resolve().parent / "audit.local.jsonl"
 
 
 def emit(payload: dict[str, Any], exit_code: int = 0) -> None:
@@ -47,6 +40,31 @@ def redact(value: str | None) -> str | None:
     value = re.sub(r"(postgres(?:ql)?://[^:/@]+:)[^@]+(@)", r"\1***\2", value, flags=re.I)
     value = re.sub(r"(password=)(?:'[^']*'|[^\s]+)", r"\1***", value, flags=re.I)
     return value
+
+
+def audit(action: str, *, connection: str | None = None, sql: str | None = None,
+          rows: int | None = None, error: str | None = None, reason: str | None = None) -> None:
+    """追加一条审计记录到本地 jsonl 文件。静默失败，不影响主流程。"""
+    try:
+        entry: dict[str, Any] = {
+            "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "action": action,
+        }
+        if connection:
+            entry["connection"] = redact(connection)
+        if sql:
+            entry["sql_hash"] = hashlib.sha256(sql.encode()).hexdigest()[:12]
+            entry["sql_preview"] = sql[:80] + ("..." if len(sql) > 80 else "")
+        if rows is not None:
+            entry["rows"] = rows
+        if error:
+            entry["error"] = error
+        if reason:
+            entry["reason"] = reason
+        with AUDIT_LOG.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
 
 
 def quote_conn_value(value: Any) -> str:
@@ -185,150 +203,6 @@ def add_connection_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--timeout", type=int, default=30, help="语句超时时间，单位秒。默认：30。")
 
 
-def normalize_sql(sql: str) -> str:
-    return sql.strip().rstrip(";").strip()
-
-
-def mask_literals_and_comments(sql: str) -> str:
-    chars: list[str] = []
-    i = 0
-    in_single = False
-    in_double = False
-    in_line_comment = False
-    in_block_comment = False
-    dollar_tag: str | None = None
-
-    while i < len(sql):
-        ch = sql[i]
-        nxt = sql[i + 1] if i + 1 < len(sql) else ""
-
-        if in_line_comment:
-            if ch == "\n":
-                in_line_comment = False
-                chars.append("\n")
-            else:
-                chars.append(" ")
-            i += 1
-            continue
-
-        if in_block_comment:
-            if ch == "*" and nxt == "/":
-                chars.extend("  ")
-                in_block_comment = False
-                i += 2
-            else:
-                chars.append(" ")
-                i += 1
-            continue
-
-        if dollar_tag:
-            if sql.startswith(dollar_tag, i):
-                chars.extend(" " * len(dollar_tag))
-                i += len(dollar_tag)
-                dollar_tag = None
-            else:
-                chars.append(" ")
-                i += 1
-            continue
-
-        if in_single:
-            if ch == "'" and nxt == "'":
-                chars.extend("  ")
-                i += 2
-            elif ch == "'":
-                chars.append(" ")
-                in_single = False
-                i += 1
-            else:
-                chars.append(" ")
-                i += 1
-            continue
-
-        if in_double:
-            if ch == '"' and nxt == '"':
-                chars.extend("  ")
-                i += 2
-            elif ch == '"':
-                chars.append(" ")
-                in_double = False
-                i += 1
-            else:
-                chars.append(" ")
-                i += 1
-            continue
-
-        if ch == "-" and nxt == "-":
-            chars.extend("  ")
-            in_line_comment = True
-            i += 2
-            continue
-        if ch == "/" and nxt == "*":
-            chars.extend("  ")
-            in_block_comment = True
-            i += 2
-            continue
-        if ch == "'":
-            chars.append(" ")
-            in_single = True
-            i += 1
-            continue
-        if ch == '"':
-            chars.append(" ")
-            in_double = True
-            i += 1
-            continue
-        if ch == "$":
-            match = re.match(r"\$[A-Za-z_][A-Za-z0-9_]*\$|\$\$", sql[i:])
-            if match:
-                dollar_tag = match.group(0)
-                chars.extend(" " * len(dollar_tag))
-                i += len(dollar_tag)
-                continue
-
-        chars.append(ch)
-        i += 1
-
-    return "".join(chars)
-
-
-def first_keyword(masked_sql: str) -> str | None:
-    match = re.search(r"\b([A-Za-z_][A-Za-z0-9_]*)\b", masked_sql)
-    return match.group(1).upper() if match else None
-
-
-def assert_read_only(sql: str, allow_explain_analyze: bool = False) -> str:
-    normalized = normalize_sql(sql)
-    if not normalized:
-        raise ValueError("SQL 为空。")
-
-    masked = mask_literals_and_comments(normalized)
-    if ";" in masked:
-        raise ValueError("不允许执行多条 SQL 语句。")
-
-    start = first_keyword(masked)
-    if start not in ALLOWED_START:
-        raise ValueError(f"默认只允许只读 SQL。检测到的首个关键字：{start or '无'}。")
-
-    upper = masked.upper()
-    for token in sorted(BANNED_TOKENS):
-        if re.search(rf"\b{re.escape(token)}\b", upper):
-            raise ValueError(f"检测到风险关键字 '{token}'。本 skill 只能生成此类 SQL，不能直接执行。")
-
-    if start == "EXPLAIN" and not allow_explain_analyze:
-        if re.search(r"\bANALYZE\b", upper):
-            raise ValueError("EXPLAIN ANALYZE 会实际执行查询，默认不允许。")
-
-    return normalized
-
-
-def limited_sql(sql: str, limit: int) -> str:
-    normalized = assert_read_only(sql)
-    start = first_keyword(mask_literals_and_comments(normalized))
-    if start in {"SELECT", "WITH"}:
-        return f"SELECT * FROM (\n{normalized}\n) AS codex_limited_query LIMIT {int(limit)}"
-    return normalized
-
-
 def connect(dsn: str | None, timeout: int):
     if not dsn:
         emit(
@@ -341,15 +215,19 @@ def connect(dsn: str | None, timeout: int):
             2,
         )
 
+    timeout = clamp_timeout(timeout)
+
     try:
         import psycopg  # type: ignore
 
         conn = psycopg.connect(dsn, connect_timeout=timeout)
         conn.execute(f"SET statement_timeout = {int(timeout) * 1000}")
+        audit("connect", connection=dsn)
         return conn, "psycopg"
     except ModuleNotFoundError:
         pass
-    except Exception as exc:  # pragma: no cover - environment dependent
+    except Exception as exc:
+        audit("connect_failed", connection=dsn, error=str(exc))
         emit({"ok": False, "error": "connection_failed", "message": str(exc), "dsn": redact(dsn)}, 3)
 
     try:
@@ -359,6 +237,7 @@ def connect(dsn: str | None, timeout: int):
         cur = conn.cursor()
         cur.execute(f"SET statement_timeout = {int(timeout) * 1000}")
         cur.close()
+        audit("connect", connection=dsn)
         return conn, "psycopg2"
     except ModuleNotFoundError:
         emit(
@@ -371,7 +250,8 @@ def connect(dsn: str | None, timeout: int):
             },
             4,
         )
-    except Exception as exc:  # pragma: no cover - environment dependent
+    except Exception as exc:
+        audit("connect_failed", connection=dsn, error=str(exc))
         emit({"ok": False, "error": "connection_failed", "message": str(exc), "dsn": redact(dsn)}, 3)
 
 
