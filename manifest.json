@@ -84,7 +84,7 @@
     },
     "work-orchestrator": {
       "path": "skills/work-orchestrator",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "description": "手动触发的中文全链路总控编排 Skill：先分析不修改，动态检查当前可用 Skill，完成证据收集、证据充分度判断、影响评估、方案设计、验证计划；用户授权后交接 Git 临时分支、代码实施、数据库/日志验证和交付收口。",
       "tags": [
         "orchestration",
