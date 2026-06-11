@@ -9,13 +9,16 @@ description: Manage AI-assisted short-lived Git delivery branches. Use when the 
 
 以下限制由 `git_common.ps1` 和入口脚本代码执行：
 
-- **保护分支拦截**：`Test-ProtectedBranch` 拒绝对 main/master/dev/uat/prod/release/* 的 push、merge 或直接提交。
+- **保护分支拦截**：`Test-ProtectedBranch` 拒绝对 main/master/dev/uat/prod/release/* 的 push 和 commit。
 - **只 push ai/* 分支**：`push_ai_branch.ps1` 检查当前分支必须是 `ai/*`，否则直接拒绝。
 - **禁止 force push**：脚本只执行 `git push -u`，不带 `--force`。
+- **保护分支上禁止 commit**：`commit_cn.ps1` 提交前检查当前分支不是保护分支。
 - **禁止全量暂存**：`stage_paths.ps1` 拒绝 `.`、`*`、`--all`、`-A`、`-u`、通配符。
+- **暂存前校验文件存在性**：路径不在 git status 中则拒绝，防止空暂存。
 - **Git 中间状态检测**：`Assert-NoGitOperationInProgress` 检测 rebase/merge/cherry-pick 中间状态，有则拒绝执行。
 - **分支命名校验**：`Test-AiBranchName` 强制 `ai/<source>/<date>-<type>-<topic>` 格式。
 - **同步只允许 ff-only**：`create_ai_branch.ps1` 只执行 `pull --ff-only`，失败即停止。
+- **审计留痕**：所有 git 操作记录到 `logs/git-ops-YYYY-MM-DD.jsonl`，7 天轮转。
 
 ## 脚本入口
 

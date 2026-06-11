@@ -140,7 +140,7 @@
     },
     "git-trunk-workflow": {
       "path": "skills/git-trunk-workflow",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "AI 短生命周期 Git 分支交付。保护分支硬编码拦截、只 push ai/*、禁止 force push、显式路径暂存、ff-only 同步、Git 状态守卫；禁止破坏性操作。",
       "tags": [
         "git",

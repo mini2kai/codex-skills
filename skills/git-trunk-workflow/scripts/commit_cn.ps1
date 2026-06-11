@@ -9,23 +9,31 @@ try {
     Assert-NoGitOperationInProgress
     $repoRoot = Get-RepoRoot
     $branch = Get-CurrentBranch
+    Assert-NotProtectedBranch -Branch $branch -Action 'commit'
     $status = Split-Status
     if ($status.staged.Count -eq 0) {
         throw '暂存区为空，拒绝 commit。请先显式暂存本次任务相关文件。'
     }
-    $args = @('commit', '-m', $Title)
+    $commitArgs = @('commit', '-m', $Title)
     foreach ($bullet in $Bullets) {
         if (-not [string]::IsNullOrWhiteSpace($bullet)) {
             $text = $bullet.Trim()
             if (-not $text.StartsWith('-')) { $text = "- $text" }
-            $args += @('-m', $text)
+            $commitArgs += @('-m', $text)
         }
     }
-    $output = & git @args 2>&1
+    $output = & git @commitArgs 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "git commit 失败：$($output -join [Environment]::NewLine)"
     }
     $postStatus = Split-Status
+    Write-GitAuditLog -Event @{
+        event = 'commit'
+        branch = $branch
+        commit = Get-FullSha
+        title = $Title
+        files = $status.staged
+    }
     Write-JsonResult @{
         ok = $true
         repo_root = $repoRoot

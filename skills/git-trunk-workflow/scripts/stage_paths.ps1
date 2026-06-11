@@ -14,8 +14,44 @@ try {
         if ($forbidden -contains $path.Trim()) { throw "拒绝全量或模糊暂存表达：$path。请显式传文件路径。" }
         if ($path.Contains('*')) { throw "拒绝通配符路径：$path。请显式传文件路径。" }
     }
+
+    # 校验文件存在性：确认路径在 git status 中真实存在
+    $statusLines = Get-StatusShortLines
+    $knownPaths = @()
+    foreach ($line in $statusLines) {
+        if ($line.Length -ge 3) {
+            $filePath = $line.Substring(3).Trim()
+            # 处理重命名 "old -> new" 格式
+            if ($filePath.Contains(' -> ')) {
+                $parts = $filePath -split ' -> '
+                $knownPaths += $parts[0].Trim()
+                $knownPaths += $parts[1].Trim()
+            } else {
+                $knownPaths += $filePath
+            }
+        }
+    }
+
+    $notFound = @()
+    foreach ($path in $Paths) {
+        $normalized = $path.Trim().Replace('\', '/')
+        $found = $false
+        foreach ($known in $knownPaths) {
+            if ($known.Replace('\', '/') -eq $normalized) { $found = $true; break }
+        }
+        if (-not $found) { $notFound += $path }
+    }
+    if ($notFound.Count -gt 0) {
+        throw "以下路径不在 git status 中，无法暂存（可能路径错误或文件无改动）：$($notFound -join ', ')"
+    }
+
     Invoke-GitLines -Args (@('add', '--') + $Paths) | Out-Null
     $status = Split-Status
+    Write-GitAuditLog -Event @{
+        event = 'stage'
+        branch = $current
+        paths = $Paths
+    }
     Write-JsonResult @{
         ok = $true
         repo_root = $repoRoot

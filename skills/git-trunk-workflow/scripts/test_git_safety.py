@@ -153,6 +153,18 @@ def test_push_protection():
     return failures
 
 
+def test_commit_protection():
+    """commit_cn.ps1 的逻辑：保护分支上不允许 commit。"""
+    failures = []
+    for branch in PROTECTED_CASES:
+        if not is_protected_branch(branch):
+            failures.append(f"FAIL (should block commit on): {branch!r}")
+    for branch in ['ai/dev/20260610-fix-bug', 'feature/test']:
+        if is_protected_branch(branch):
+            failures.append(f"FAIL (should allow commit on): {branch!r}")
+    return failures
+
+
 def main():
     all_failures = []
     tests = [
@@ -160,6 +172,7 @@ def main():
         ("ai_branch_names", test_ai_branch_names),
         ("stage_paths", test_stage_paths),
         ("push_protection", test_push_protection),
+        ("commit_protection", test_commit_protection),
     ]
 
     for name, test_fn in tests:

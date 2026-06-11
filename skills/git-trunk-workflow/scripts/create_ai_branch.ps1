@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory = $true)][string]$SourceBranch,
     [Parameter(Mandatory = $true)][string]$BranchName,
     [switch]$SyncSource,
-    [switch]$CheckoutSource
+    [switch]$NoCheckout
 )
 
 . "$PSScriptRoot\git_common.ps1"
@@ -31,9 +31,10 @@ try {
         $fetchRan = $true
     }
 
+    # 默认自动切到来源分支（除非 -NoCheckout）
     if ($current -ne $SourceBranch) {
-        if (-not $CheckoutSource) {
-            throw "当前分支是 $current，不是来源分支 $SourceBranch。未传 -CheckoutSource，拒绝自动切换。"
+        if ($NoCheckout) {
+            throw "当前分支是 $current，不是来源分支 $SourceBranch。已指定 -NoCheckout，拒绝切换。"
         }
         Invoke-GitLines -Args @('checkout', $SourceBranch) | Out-Null
         $current = Get-CurrentBranch
@@ -54,6 +55,14 @@ try {
     }
 
     Invoke-GitLines -Args @('checkout', '-b', $BranchName) | Out-Null
+    Write-GitAuditLog -Event @{
+        event = 'create_branch'
+        source_branch = $SourceBranch
+        ai_branch = $BranchName
+        source_commit = $sourceLocalSha
+        fetch_ran = $fetchRan
+        pull_ff_only_ran = $pullFfOnlyRan
+    }
     Write-JsonResult @{
         ok = $true
         repo_root = $repoRoot

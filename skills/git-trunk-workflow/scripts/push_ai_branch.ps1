@@ -11,12 +11,22 @@ try {
     if (-not (Test-AiBranchCurrent -Branch $branch)) {
         throw "当前分支不是 ai/*，拒绝 push：$branch。"
     }
-    if (Test-ProtectedBranch -Branch $branch) {
-        throw "当前分支是受保护长期分支，拒绝 push：$branch。"
-    }
+    Assert-NotProtectedBranch -Branch $branch -Action 'push'
     $output = & git push -u $Remote $branch 2>&1
     if ($LASTEXITCODE -ne 0) {
-        throw "git push 失败：$($output -join [Environment]::NewLine)"
+        $errorText = $output -join [Environment]::NewLine
+        $nextAction = 'git push 失败。'
+        if ($errorText -match 'Proxy|proxy|CONNECT') {
+            $nextAction = "网络代理问题，尝试：git -c http.proxy=`"`" -c https.proxy=`"`" push -u $Remote $branch"
+        }
+        Write-JsonResult @{ ok = $false; error = 'push_failed'; message = $errorText; next_action = $nextAction }
+        exit 1
+    }
+    Write-GitAuditLog -Event @{
+        event = 'push'
+        remote = $Remote
+        branch = $branch
+        head = Get-FullSha
     }
     Write-JsonResult @{
         ok = $true

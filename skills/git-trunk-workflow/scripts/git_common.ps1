@@ -1,9 +1,44 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# --- 围栏常量 ---
+$script:AUDIT_RETENTION_DAYS = 7
+
 function Write-JsonResult {
     param([Parameter(Mandatory = $true)][hashtable]$Data)
     $Data | ConvertTo-Json -Depth 8
+}
+
+function Get-GitAuditLogDir {
+    Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..')).Path 'logs'
+}
+
+function Write-GitAuditLog {
+    param([Parameter(Mandatory = $true)][hashtable]$Event)
+    $logDir = Get-GitAuditLogDir
+    if (-not (Test-Path -LiteralPath $logDir)) {
+        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+    }
+    # 清理过期日志
+    Get-ChildItem -LiteralPath $logDir -Filter 'git-ops-*.jsonl' -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-$script:AUDIT_RETENTION_DAYS) } |
+        Remove-Item -Force
+    $date = Get-Date
+    $payload = [ordered]@{
+        time = $date.ToString('yyyy-MM-ddTHH:mm:ss.fffzzz')
+        skill = 'git-trunk-workflow'
+    }
+    foreach ($key in $Event.Keys) { $payload[$key] = $Event[$key] }
+    $line = $payload | ConvertTo-Json -Compress -Depth 8
+    $path = Join-Path $logDir ("git-ops-{0}.jsonl" -f $date.ToString('yyyy-MM-dd'))
+    Add-Content -LiteralPath $path -Value $line -Encoding UTF8
+}
+
+function Assert-NotProtectedBranch {
+    param([Parameter(Mandatory = $true)][string]$Branch, [string]$Action = 'operation')
+    if (Test-ProtectedBranch -Branch $Branch) {
+        throw "当前分支 $Branch 是保护分支，拒绝 $Action。"
+    }
 }
 
 function Invoke-GitLines {

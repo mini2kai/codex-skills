@@ -22,8 +22,9 @@ dist/
 # Local private scripts and server access details
 custom_script/
 
-# Local server-docker-logs-readonly audit logs
+# Local skill audit logs
 skills/server-docker-logs-readonly/logs/
+skills/git-trunk-workflow/logs/
 
 # Local private skill connection profiles
 skills/postgres-query/scripts/connections.local.json

@@ -53,6 +53,26 @@ This ensures every AI branch is traceable to its source, date, and purpose.
 
 `Assert-NoGitOperationInProgress` checks for MERGE_HEAD, REBASE_HEAD, CHERRY_PICK_HEAD, and rebase directories. If any exist, all operations are refused until the user resolves the state.
 
+### 7. Commit on Protected Branch Rejected
+
+`commit_cn.ps1` calls `Assert-NotProtectedBranch` before committing. Even if AI somehow stages files on a protected branch, the commit itself is blocked.
+
+### 8. File Existence Validation Before Staging
+
+`stage_paths.ps1` cross-checks every requested path against `git status` output. If a path has no changes (typo, wrong path, already committed), staging is refused with an explicit error listing the missing paths.
+
+### 9. Audit Trail
+
+All git operations (create branch, stage, commit, push, handoff summary) are logged to `logs/git-ops-YYYY-MM-DD.jsonl` with 7-day rotation. Audit records include timestamp, event type, branch, commit hash, and affected files.
+
+### 10. Source Branch Staleness Detection
+
+`git_handoff_summary.ps1` reports how many commits the source branch is ahead of the current AI branch. If source moved forward during development, the handoff explicitly warns about potential merge conflicts.
+
+### 11. Push Failure Guidance
+
+When `push_ai_branch.ps1` fails due to proxy/network issues, it outputs a `next_action` with a bypass command (`git -c http.proxy="" push`) instead of just an error message.
+
 ## What Was Deliberately Removed
 
 - **10-step workflow documentation**: model knows Git flow
