@@ -64,8 +64,8 @@
     },
     "server-docker-logs-readonly": {
       "path": "skills/server-docker-logs-readonly",
-      "version": "0.1.1",
-      "description": "本地脚本白名单模式按本地配置查询服务器绝对目录日志，并保留 Docker 日志读取作为备用方案。",
+      "version": "0.2.0",
+      "description": "白名单脚本模式服务器日志只读查询。远程命令白名单+黑名单双重检查、路径穿越拦截、参数硬上限、权限模型、审计留痕；禁止直接 SSH/Docker 命令。",
       "tags": [
         "server",
         "docker",
@@ -140,8 +140,8 @@
     },
     "git-trunk-workflow": {
       "path": "skills/git-trunk-workflow",
-      "version": "0.1.1",
-      "description": "AI 协作短生命周期 Git 分支交付流程：从 dev/uat/release/prod 来源分支创建 ai/* 临时分支，中文详细提交、可选远程 push、验证摘要和合并前交接；禁止破坏性 Git 操作。",
+      "version": "0.2.0",
+      "description": "AI 短生命周期 Git 分支交付。保护分支硬编码拦截、只 push ai/*、禁止 force push、显式路径暂存、ff-only 同步、Git 状态守卫；禁止破坏性操作。",
       "tags": [
         "git",
         "branch",

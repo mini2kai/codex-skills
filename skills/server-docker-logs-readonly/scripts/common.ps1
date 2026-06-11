@@ -1,6 +1,26 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# --- 围栏常量 ---
+
+$script:REMOTE_CMD_WHITELIST_PATTERN = '^(cd -- /[A-Za-z0-9_./-]+ && |docker ps --format|docker inspect --format|docker exec [A-Za-z0-9_.-]+ /bin/sh -lc )'
+
+# 路径穿越检测：白名单通过后额外检查
+$script:PATH_TRAVERSAL_PATTERN = '\.\.'
+
+$script:REMOTE_CMD_DANGER_FRAGMENTS = @(
+    ' rm ', ' rm -', "'rm ", ' mv ', ' cp ', ' touch ', ' mkdir ', ' rmdir ',
+    ' chmod ', ' chown ', ' tee ', ' truncate ', ' sed -i', ' >', '>>',
+    ' restart', ' stop', ' start', ' kill', ' systemctl ', ' service ',
+    ' apt ', ' yum ', ' pip ', ' npm ', ' curl ', "'curl ", ' wget ', "'wget ",
+    ' nc ', ' bash -i'
+)
+
+$script:MAX_TAIL = 5000
+$script:MAX_MATCHES = 1000
+$script:MAX_KEYWORD_LENGTH = 200
+$script:AUDIT_RETENTION_DAYS = 7
+
 function Write-Json {
     param(
         [Parameter(Mandatory = $true)] [hashtable] $Payload,
@@ -25,7 +45,7 @@ function Get-AuditLogDir {
 function Remove-OldAuditLogs {
     $logDir = Get-AuditLogDir
     if (-not (Test-Path -LiteralPath $logDir)) { return }
-    $cutoff = (Get-Date).AddDays(-7)
+    $cutoff = (Get-Date).AddDays(-$script:AUDIT_RETENTION_DAYS)
     Get-ChildItem -LiteralPath $logDir -Filter 'server-access-*.jsonl' -File -ErrorAction SilentlyContinue |
         Where-Object { $_.LastWriteTime -lt $cutoff } |
         Remove-Item -Force
@@ -125,15 +145,15 @@ function Assert-RequiredLogFile {
 
 function Assert-Tail {
     param([int] $Tail)
-    if ($Tail -lt 1 -or $Tail -gt 5000) {
-        Write-Json @{ ok = $false; error = 'invalid_parameter'; field = 'Tail'; message = 'Tail 必须在 1 到 5000 之间。' } 4
+    if ($Tail -lt 1 -or $Tail -gt $script:MAX_TAIL) {
+        Write-Json @{ ok = $false; error = 'invalid_parameter'; field = 'Tail'; message = "Tail 必须在 1 到 $($script:MAX_TAIL) 之间。" } 4
     }
 }
 
 function Assert-MaxMatches {
     param([int] $MaxMatches)
-    if ($MaxMatches -lt 1 -or $MaxMatches -gt 1000) {
-        Write-Json @{ ok = $false; error = 'invalid_parameter'; field = 'MaxMatches'; message = 'MaxMatches 必须在 1 到 1000 之间。' } 4
+    if ($MaxMatches -lt 1 -or $MaxMatches -gt $script:MAX_MATCHES) {
+        Write-Json @{ ok = $false; error = 'invalid_parameter'; field = 'MaxMatches'; message = "MaxMatches 必须在 1 到 $($script:MAX_MATCHES) 之间。" } 4
     }
 }
 
@@ -237,16 +257,13 @@ function Assert-RemoteReadCommand {
     if ($RemoteCommand -match "[`r`n]") {
         Write-Json @{ ok = $false; error = 'unsafe_remote_command'; message = '远程命令必须是单行命令。' } 4
     }
-    if ($RemoteCommand -notmatch '^(cd -- /[A-Za-z0-9_./-]+ && |docker ps --format|docker inspect --format|docker exec [A-Za-z0-9_.-]+ /bin/sh -lc )') {
+    if ($RemoteCommand -notmatch $script:REMOTE_CMD_WHITELIST_PATTERN) {
         Write-Json @{ ok = $false; error = 'unsafe_remote_command'; message = '远程命令不在只读日志命令白名单内。' } 4
     }
-    $danger = @(
-        ' rm ', ' rm -', ' mv ', ' cp ', ' touch ', ' mkdir ', ' rmdir ',
-        ' chmod ', ' chown ', ' tee ', ' truncate ', ' sed -i', ' >', '>>',
-        ' restart', ' stop', ' start', ' kill', ' systemctl ', ' service ',
-        ' apt ', ' yum ', ' pip ', ' npm ', ' curl ', ' wget ', ' nc ', ' bash -i'
-    )
-    foreach ($item in $danger) {
+    if ($RemoteCommand -match $script:PATH_TRAVERSAL_PATTERN) {
+        Write-Json @{ ok = $false; error = 'unsafe_remote_command'; message = '远程命令包含路径穿越（..）。' } 4
+    }
+    foreach ($item in $script:REMOTE_CMD_DANGER_FRAGMENTS) {
         if ($RemoteCommand.IndexOf($item, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
             Write-Json @{ ok = $false; error = 'unsafe_remote_command'; message = "远程命令包含禁止片段：$item" } 4
         }
@@ -353,8 +370,8 @@ function New-SearchInnerCommand {
     param([string] $Dir, [string] $File, [string] $Keyword, [int] $MaxMatches)
     Assert-RequiredLogFile -File $File
     Assert-MaxMatches -MaxMatches $MaxMatches
-    if ([string]::IsNullOrWhiteSpace($Keyword) -or $Keyword.Length -gt 200) {
-        Write-Json @{ ok = $false; error = 'invalid_parameter'; field = 'Keyword'; message = 'Keyword 为必填项，且长度不能超过 200 个字符。' } 4
+    if ([string]::IsNullOrWhiteSpace($Keyword) -or $Keyword.Length -gt $script:MAX_KEYWORD_LENGTH) {
+        Write-Json @{ ok = $false; error = 'invalid_parameter'; field = 'Keyword'; message = "Keyword 为必填项，且长度不能超过 $($script:MAX_KEYWORD_LENGTH) 个字符。" } 4
     }
     if ($Keyword -match '["`$\\]') { Write-Json @{ ok = $false; error = 'invalid_parameter'; field = 'Keyword'; message = 'Keyword 包含不支持的 shell 特殊字符。' } 4 }
     return "cd -- $Dir && grep -F -- `"$Keyword`" $File 2>/dev/null | tail -n $MaxMatches"

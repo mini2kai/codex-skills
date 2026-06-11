@@ -1,7 +1,0 @@
-interface:
-  display_name: "server-docker-logs-readonly"
-  short_description: "按日志源只读查询服务器日志"
-  default_prompt: "使用 $server-docker-logs-readonly 通过本地白名单脚本只读查询服务器日志源，优先读取绝对目录，Docker 仅作为备用方案。"
-
-policy:
-  allow_implicit_invocation: true
