@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from sql_guard import assert_read_only, limited_sql, mask_literals_and_comments, MAX_ROWS
+from sql_guard import assert_read_only, limited_sql, mask_literals_and_comments
 
 
 # === 应该通过的只读 SQL ===
@@ -138,20 +138,20 @@ def test_edge_cases():
 
 
 def test_limited_sql():
-    """limited_sql 应该追加 LIMIT 且不超过 MAX_ROWS。"""
+    """limited_sql 应验证只读和 limit 参数，但不改写原 SQL。"""
     failures = []
 
     result = limited_sql("SELECT * FROM users", 50)
-    if "LIMIT 50" not in result:
-        failures.append(f"FAIL: expected LIMIT 50 in: {result}")
+    if result != "SELECT * FROM users":
+        failures.append(f"FAIL: SELECT should not be wrapped: {result}")
 
     result = limited_sql("SELECT * FROM users", 99999)
-    if f"LIMIT {MAX_ROWS}" not in result:
-        failures.append(f"FAIL: expected LIMIT {MAX_ROWS} (clamped) in: {result}")
+    if result != "SELECT * FROM users":
+        failures.append(f"FAIL: SELECT should remain unchanged when limit is clamped: {result}")
 
     result = limited_sql("SHOW server_version", 50)
     if "LIMIT" in result:
-        failures.append(f"FAIL: SHOW should not get LIMIT wrapper: {result}")
+        failures.append(f"FAIL: SHOW should remain unchanged: {result}")
 
     try:
         limited_sql("DELETE FROM users", 10)

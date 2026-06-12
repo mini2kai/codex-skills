@@ -41,7 +41,7 @@ MAX_ROWS = 1000     # Maximum rows per query
 MAX_TIMEOUT = 120   # Seconds
 ```
 
-Even if AI passes `--limit 99999`, `limited_sql()` clamps to 1000. Even if it passes `--timeout 9999`, `clamp_timeout()` clamps to 120. Callers cannot breach the ceiling.
+Even if AI passes `--limit 99999`, the limit is clamped to 1000. `pg_query.py` no longer rewrites user SQL as `SELECT * FROM (...) LIMIT N`; it executes the original read-only SQL and truncates output with `fetchmany(limit + 1)`, avoiding Greenplum compatibility issues around wrapped system catalog queries. Even if AI passes `--timeout 9999`, `clamp_timeout()` clamps to 120. Callers cannot breach the output ceiling.
 
 ### 3. Credentials Never Persist
 

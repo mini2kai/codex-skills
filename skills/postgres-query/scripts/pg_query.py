@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from pg_common import add_connection_args, audit, connect, emit, fetch_all, limited_sql, redact, resolve_dsn
+from pg_common import add_connection_args, audit, connect, emit, fetch_limited, limited_sql, redact, resolve_dsn
 from sql_guard import MAX_ROWS
 
 
@@ -26,7 +26,7 @@ def main() -> None:
     dsn = resolve_dsn(args)
     conn, driver = connect(dsn, args.timeout)
     try:
-        columns, rows = fetch_all(conn, sql)
+        columns, rows, truncated = fetch_limited(conn, sql, args.limit)
     except Exception as exc:
         audit("query_failed", connection=dsn, sql=args.sql, error=str(exc))
         emit({"ok": False, "error": "query_failed", "message": str(exc), "dsn": redact(dsn)}, 3)
@@ -42,6 +42,8 @@ def main() -> None:
             "connection": redact(dsn),
             "columns": columns,
             "row_count": len(rows),
+            "limit": args.limit,
+            "truncated": truncated,
             "rows": rows,
         }
     )

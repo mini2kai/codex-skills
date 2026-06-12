@@ -39,7 +39,7 @@ MAX_ROWS = 1000     # 单次查询最多返回行数
 MAX_TIMEOUT = 120   # 秒
 ```
 
-即使 AI 传入 `--limit 99999`，`limited_sql()` 自动截断到 1000。即使传入 `--timeout 9999`，`clamp_timeout()` 截断到 120。调用方无法突破上限。
+即使 AI 传入 `--limit 99999`，limit 也会被截断到 1000。`pg_query.py` 不再把用户 SQL 包成 `SELECT * FROM (...) LIMIT N`，而是在执行原始只读 SQL 后用 `fetchmany(limit + 1)` 截断输出，避免 Greenplum 等系统目录表对子查询包裹不兼容。即使传入 `--timeout 9999`，`clamp_timeout()` 截断到 120。调用方无法突破输出上限。
 
 ### 3. 凭据不落盘
 

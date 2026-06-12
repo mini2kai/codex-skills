@@ -264,3 +264,18 @@ def fetch_all(conn: Any, sql: str, params: Iterable[Any] | None = None) -> tuple
         return columns, rows
     finally:
         cur.close()
+
+
+def fetch_limited(conn: Any, sql: str, limit: int, params: Iterable[Any] | None = None) -> tuple[list[str], list[list[Any]], bool]:
+    cur = conn.cursor()
+    try:
+        cur.execute(sql, tuple(params or ()))
+        columns = [desc[0] for desc in (cur.description or [])]
+        if not columns:
+            return columns, [], False
+        raw_rows = cur.fetchmany(limit + 1)
+        truncated = len(raw_rows) > limit
+        rows = [list(row) for row in raw_rows[:limit]]
+        return columns, rows, truncated
+    finally:
+        cur.close()

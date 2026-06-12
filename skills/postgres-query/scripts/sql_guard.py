@@ -203,15 +203,11 @@ def assert_read_only(sql: str, *, allow_explain_analyze: bool = False) -> str:
 
 
 def limited_sql(sql: str, limit: int) -> str:
-    """验证 SQL 只读性并对 SELECT/WITH 追加行数限制。"""
+    """验证 SQL 只读性并校验行数限制参数。实际截断由调用方 fetchmany 执行。"""
     limit = min(limit, MAX_ROWS)
     if limit < 1:
         raise ValueError(f"limit 必须在 1 到 {MAX_ROWS} 之间。")
-    normalized = assert_read_only(sql)
-    start = first_keyword(mask_literals_and_comments(normalized))
-    if start in {"SELECT", "WITH"}:
-        return f"SELECT * FROM (\n{normalized}\n) AS _limited LIMIT {int(limit)}"
-    return normalized
+    return assert_read_only(sql)
 
 
 def clamp_timeout(timeout: int) -> int:
