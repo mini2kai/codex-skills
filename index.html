@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M2K Skills</title>
+  <meta name="description" content="Reusable, auditable AI Agent skills with code-enforced safety boundaries.">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --ink: #16202a;
+      --muted: #607080;
+      --line: #dfe5eb;
+      --blue: #1769e0;
+      --green: #16845f;
+      --gold: #a56a00;
+      --red: #b43b47;
+      --shadow: 0 18px 50px rgba(25, 38, 52, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 24px 0 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: #16202a;
+      color: #ffffff;
+      font-size: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    nav a,
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .button.primary {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #ffffff;
+    }
+
+    main { padding: 20px 0 56px; }
+
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 430px);
+      gap: 28px;
+      align-items: center;
+      min-height: 520px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    h1 {
+      margin: 22px 0 16px;
+      max-width: 760px;
+      font-size: clamp(42px, 8vw, 82px);
+      line-height: 0.96;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 640px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 19px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .terminal {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #101820;
+      color: #dfe9f4;
+      box-shadow: var(--shadow);
+    }
+
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      height: 38px;
+      padding: 0 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      background: #17222d;
+    }
+
+    .light {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #8ea0b2;
+    }
+
+    .light:nth-child(1) { background: #dc6c6c; }
+    .light:nth-child(2) { background: #e1b64a; }
+    .light:nth-child(3) { background: #53b779; }
+
+    .terminal-body {
+      padding: 22px;
+      font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 13px;
+    }
+
+    .line {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 0 0 12px;
+    }
+
+    .prompt {
+      color: #67d391;
+      flex: 0 0 auto;
+    }
+
+    .cmd {
+      color: #f4f7fb;
+      overflow-wrap: anywhere;
+    }
+
+    .output { color: #aebdca; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .tile {
+      min-height: 128px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .tile strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .tile span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stripe {
+      height: 4px;
+      margin: -18px -18px 16px;
+      border-radius: 8px 8px 0 0;
+      background: var(--blue);
+    }
+
+    .tile:nth-child(2) .stripe { background: var(--green); }
+    .tile:nth-child(3) .stripe { background: var(--gold); }
+    .tile:nth-child(4) .stripe { background: var(--red); }
+
+    .section-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 48px;
+      padding-top: 28px;
+      border-top: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .section-title p {
+      max-width: 520px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 28px 0 42px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 860px) {
+      header,
+      footer,
+      .section-title {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      nav { justify-content: flex-start; }
+
+      .intro {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        padding-top: 26px;
+      }
+
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100% - 24px, 1120px); }
+      h1 { font-size: 44px; }
+      .lead { font-size: 17px; }
+      .grid { grid-template-columns: 1fr; }
+      nav a,
+      .button { width: 100%; }
+      nav,
+      .actions { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <a class="brand" href="./" aria-label="M2K Skills home">
+        <span class="mark">M</span>
+        <span>M2K Skills</span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="./README.md">Docs</a>
+        <a href="./README_cn.md">Chinese</a>
+        <a href="https://github.com/mini2kai/m2k-skills">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <div class="eyebrow"><span class="dot"></span>Cloudflare Pages is live</div>
+          <h1 id="page-title">Reusable AI Agent skills with real safety fences.</h1>
+          <p class="lead">M2K Skills is a practical toolbox for Codex-style agents: PostgreSQL inspection, server log reading, Git delivery, Feishu workflows, web demo publishing, and more.</p>
+          <div class="actions">
+            <a class="button primary" href="./README.md">Read the guide</a>
+            <a class="button" href="./INSTALLATION.md">Install skills</a>
+          </div>
+        </div>
+
+        <aside class="terminal" aria-label="Quick start preview">
+          <div class="terminal-bar"><span class="light"></span><span class="light"></span><span class="light"></span></div>
+          <div class="terminal-body">
