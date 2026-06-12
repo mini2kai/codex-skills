@@ -22,9 +22,9 @@ try {
             $commitArgs += @('-m', $text)
         }
     }
-    $output = & git @commitArgs 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "git commit 失败：$($output -join [Environment]::NewLine)"
+    $commitResult = Invoke-GitCapture -Args $commitArgs
+    if ($commitResult.ExitCode -ne 0) {
+        throw "git commit 失败：$($commitResult.Lines -join [Environment]::NewLine)"
     }
     $postStatus = Split-Status
     Write-GitAuditLog -Event @{
