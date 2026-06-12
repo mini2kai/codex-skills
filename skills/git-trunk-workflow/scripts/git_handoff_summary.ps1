@@ -95,8 +95,8 @@ try {
         primary_target_behind = $primaryAheadBehind.behind
         backport_target = $BackportTarget
         backport_target_diff_stat = $backportDiff
-        cleanup_suggestion = '合并完成并确认回灌后 7-30 天清理 ai/* 分支；未合并超过 30-60 天提醒确认。'
-        merge_warning = '脚本不执行长期分支 merge；如目标分支差异较大，优先建议 cherry-pick 或从目标分支重新开 ai/* 分支适配。'
+        cleanup_suggestion = '合并完成并确认回灌后 7-30 天清理临时分支；未合并超过 30-60 天提醒确认。'
+        merge_warning = '脚本不执行长期分支 merge；如目标分支差异较大，优先建议 cherry-pick 或从目标分支重新开临时分支适配。'
     }
 } catch {
     Write-JsonResult @{ ok = $false; error = $_.Exception.Message }

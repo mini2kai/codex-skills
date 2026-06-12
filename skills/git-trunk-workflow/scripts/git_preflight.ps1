@@ -15,7 +15,8 @@ try {
     }
     $aheadBehind = Get-AheadBehind
     $status = Split-Status
-    $aiBranches = @(Invoke-GitLines -Args @('branch', '--list', 'ai/*') | ForEach-Object { $_.Trim().TrimStart('*').Trim() } | Where-Object { $_ })
+    $allBranches = @(Invoke-GitLines -Args @('branch', '--list') | ForEach-Object { $_.Trim().TrimStart('*').Trim() } | Where-Object { $_ })
+    $shortLivedBranches = @($allBranches | Where-Object { -not (Test-ProtectedBranch -Branch $_) })
     $warning = Get-LongLivedBranchWarning -Branch $branch
     Write-JsonResult @{
         ok = $true
@@ -30,9 +31,9 @@ try {
         staged = $status.staged
         unstaged = $status.unstaged
         untracked = $status.untracked
-        ai_branches = $aiBranches
+        short_lived_branches = $shortLivedBranches
         warning = $warning
-        next_action = '确认来源分支；工作区干净时可创建 ai/* 临时分支。'
+        next_action = '确认来源分支；工作区干净时可创建临时分支。'
     }
 } catch {
     Write-JsonResult @{ ok = $false; error = $_.Exception.Message }

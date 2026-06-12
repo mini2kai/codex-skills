@@ -41,13 +41,30 @@ function Assert-NotProtectedBranch {
     }
 }
 
+function Invoke-GitCapture {
+    param([Parameter(Mandatory = $true)][string[]]$Args)
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & git @Args 2>&1
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    return @{
+        ExitCode = $exitCode
+        Lines = @($output | ForEach-Object { $_.ToString() })
+    }
+}
+
 function Invoke-GitLines {
     param([Parameter(Mandatory = $true)][string[]]$Args)
-    $output = & git @Args 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "git $($Args -join ' ') failed: $($output -join [Environment]::NewLine)"
+    $result = Invoke-GitCapture -Args $Args
+    if ($result.ExitCode -ne 0) {
+        throw "git $($Args -join ' ') failed: $($result.Lines -join [Environment]::NewLine)"
     }
-    return @($output)
+    return @($result.Lines)
 }
 
 function Invoke-GitText {
@@ -74,9 +91,9 @@ function Get-FullSha {
 }
 
 function Get-Upstream {
-    $output = & git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>$null
-    if ($LASTEXITCODE -ne 0) { return '' }
-    return ($output -join '').Trim()
+    $result = Invoke-GitCapture -Args @('rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}')
+    if ($result.ExitCode -ne 0) { return '' }
+    return ($result.Lines -join '').Trim()
 }
 
 function Get-StatusShortLines {
@@ -84,17 +101,7 @@ function Get-StatusShortLines {
 }
 
 function Test-WorktreeClean {
-    return (Get-StatusShortLines).Count -eq 0
-}
-
-function Test-AiBranchName {
-    param([Parameter(Mandatory = $true)][string]$Branch)
-    return $Branch -match '^ai/[A-Za-z0-9._-]+/[0-9]{8}-(fix|feat|bug|hotfix|docs|chore|refactor)-[A-Za-z0-9._-]+$'
-}
-
-function Test-AiBranchCurrent {
-    param([Parameter(Mandatory = $true)][string]$Branch)
-    return $Branch -like 'ai/*'
+    return @(Get-StatusShortLines).Count -eq 0
 }
 
 function Test-ProtectedBranch {
@@ -150,7 +157,7 @@ function Assert-NoGitOperationInProgress {
 
 function Get-RemoteRefSha {
     param([Parameter(Mandatory = $true)][string]$RemoteRef)
-    $output = & git rev-parse --verify --quiet $RemoteRef 2>$null
-    if ($LASTEXITCODE -ne 0) { return '' }
-    return ($output -join '').Trim()
+    $result = Invoke-GitCapture -Args @('rev-parse', '--verify', '--quiet', $RemoteRef)
+    if ($result.ExitCode -ne 0) { return '' }
+    return ($result.Lines -join '').Trim()
 }

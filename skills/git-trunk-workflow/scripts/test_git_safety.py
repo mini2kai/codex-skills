@@ -9,17 +9,13 @@
 
 from __future__ import annotations
 
-import re
 import sys
+from pathlib import Path
 
 # --- 从 git_common.ps1 提取的围栏规则 ---
 
 PROTECTED_BRANCHES = {'main', 'master', 'dev', 'uat', 'prod', 'production', 'staging'}
 PROTECTED_PREFIXES = ('release/', 'hotfix/')
-
-AI_BRANCH_PATTERN = re.compile(
-    r'^ai/[A-Za-z0-9._-]+/[0-9]{8}-(fix|feat|bug|hotfix|docs|chore|refactor)-[A-Za-z0-9._-]+$'
-)
 
 FORBIDDEN_STAGE_PATHS = {'.', '*', ':/', '--all', '-A', '-u'}
 
@@ -31,14 +27,6 @@ def is_protected_branch(branch: str) -> bool:
         if branch.startswith(prefix):
             return True
     return False
-
-
-def is_valid_ai_branch_name(branch: str) -> bool:
-    return AI_BRANCH_PATTERN.match(branch) is not None
-
-
-def is_ai_branch(branch: str) -> bool:
-    return branch.startswith('ai/')
 
 
 def is_forbidden_stage_path(path: str) -> bool:
@@ -65,32 +53,6 @@ NOT_PROTECTED_CASES = [
     'experiment/test',
 ]
 
-# === AI 分支命名测试 ===
-
-VALID_AI_NAMES = [
-    'ai/uat/20260608-fix-export-null',
-    'ai/dev/20260608-feat-shop-filter',
-    'ai/release-202606/20260608-hotfix-price-sync',
-    'ai/prod/20260608-hotfix-login-npe',
-    'ai/dev/20260610-docs-update-readme',
-    'ai/uat/20260610-chore-cleanup',
-    'ai/dev/20260610-refactor-query-module',
-    'ai/uat/20260610-bug-OTB-1234-export-null',
-]
-
-INVALID_AI_NAMES = [
-    'dev',
-    'main',
-    'feature/something',
-    'ai/',
-    'ai/dev',
-    'ai/dev/',
-    'ai/dev/20260608',
-    'ai/dev/20260608-unknown-type-topic',
-    'ai/dev/fix-no-date',
-    'ai/dev/2026060-fix-short-date',
-]
-
 # === 暂存路径测试 ===
 
 FORBIDDEN_PATHS = ['.', '*', ':/', '--all', '-A', '-u', '', '  ', 'src/*.ts', '**/*.py']
@@ -115,17 +77,6 @@ def test_protected_branches():
     return failures
 
 
-def test_ai_branch_names():
-    failures = []
-    for name in VALID_AI_NAMES:
-        if not is_valid_ai_branch_name(name):
-            failures.append(f"FAIL (should be valid): {name!r}")
-    for name in INVALID_AI_NAMES:
-        if is_valid_ai_branch_name(name):
-            failures.append(f"FAIL (should be invalid): {name!r}")
-    return failures
-
-
 def test_stage_paths():
     failures = []
     for path in FORBIDDEN_PATHS:
@@ -138,18 +89,16 @@ def test_stage_paths():
 
 
 def test_push_protection():
-    """push_ai_branch.ps1 的逻辑：只允许 push ai/* 分支。"""
+    """push_branch.ps1 的逻辑：只要不是保护分支即可 push。"""
     failures = []
-    # 应该允许 push
-    for branch in ['ai/dev/20260610-fix-bug', 'ai/uat/20260610-feat-new']:
-        if not is_ai_branch(branch):
-            failures.append(f"FAIL (should allow push): {branch!r}")
+    # 应该允许 push（非保护分支，无论是否 ai/* 前缀）
+    for branch in ['ai/dev/20260610-fix-bug', 'ai/uat/20260610-feat-new', 'feature/something', 'bugfix/test']:
         if is_protected_branch(branch):
-            failures.append(f"FAIL (ai branch marked protected): {branch!r}")
-    # 应该拒绝 push
-    for branch in PROTECTED_CASES + ['feature/something', 'bugfix/test']:
-        if is_ai_branch(branch):
-            failures.append(f"FAIL (non-ai branch passed ai check): {branch!r}")
+            failures.append(f"FAIL (should allow push): {branch!r}")
+    # 应该拒绝 push（保护分支）
+    for branch in PROTECTED_CASES:
+        if not is_protected_branch(branch):
+            failures.append(f"FAIL (should block push on protected): {branch!r}")
     return failures
 
 
@@ -165,14 +114,49 @@ def test_commit_protection():
     return failures
 
 
+def test_create_branch_failure_blocks_native_fallback():
+    """create_branch.ps1 失败时必须明确禁止原生 Git 兜底。"""
+    failures = []
+    script_path = Path(__file__).resolve().with_name('create_branch.ps1')
+    content = script_path.read_text(encoding='utf-8')
+    required_snippets = [
+        'native_git_fallback_forbidden',
+        'blocked_next_step',
+        'git checkout -b',
+        'git switch -c',
+    ]
+    for snippet in required_snippets:
+        if snippet not in content:
+            failures.append(f"FAIL (create branch script missing fallback block): {snippet!r}")
+    return failures
+
+
+def test_git_common_uses_strict_safe_capture():
+    """git_common.ps1 必须处理 clean 仓库空输出和 native stderr。"""
+    failures = []
+    script_path = Path(__file__).resolve().with_name('git_common.ps1')
+    content = script_path.read_text(encoding='utf-8')
+    required_snippets = [
+        'function Invoke-GitCapture',
+        "$ErrorActionPreference = 'Continue'",
+        'ExitCode = $exitCode',
+        'return @(Get-StatusShortLines).Count -eq 0',
+    ]
+    for snippet in required_snippets:
+        if snippet not in content:
+            failures.append(f"FAIL (git_common missing strict-safe capture): {snippet!r}")
+    return failures
+
+
 def main():
     all_failures = []
     tests = [
         ("protected_branches", test_protected_branches),
-        ("ai_branch_names", test_ai_branch_names),
         ("stage_paths", test_stage_paths),
         ("push_protection", test_push_protection),
         ("commit_protection", test_commit_protection),
+        ("create_branch_failure_blocks_native_fallback", test_create_branch_failure_blocks_native_fallback),
+        ("git_common_uses_strict_safe_capture", test_git_common_uses_strict_safe_capture),
     ]
 
     for name, test_fn in tests:
