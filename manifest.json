@@ -141,8 +141,8 @@
     },
     "git-trunk-workflow": {
       "path": "skills/git-trunk-workflow",
-      "version": "0.2.2",
-      "description": "AI 短生命周期 Git 分支交付。保护分支硬编码拦截、只 push ai/*、禁止 force push、显式路径暂存、ff-only 同步、Git 状态守卫；脚本失败禁止原生命令兜底。",
+      "version": "0.3.1",
+      "description": "安全 Git 执行层。保护分支拦截、禁止 force push、显式路径暂存、commit 前缀强制校验（13 类）、ff-only 同步、审计留痕；脚本失败禁止原生命令兜底。命名约定由 orchestrator 负责。",
       "tags": [
         "git",
         "branch",
