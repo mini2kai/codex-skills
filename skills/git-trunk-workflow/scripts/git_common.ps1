@@ -104,6 +104,20 @@ function Test-WorktreeClean {
     return @(Get-StatusShortLines).Count -eq 0
 }
 
+$script:COMMIT_PREFIXES = @(
+    'feat', 'fix', 'refactor', 'perf', 'style', 'config',
+    'export', 'docs', 'chore', 'sql', 'hotfix', 'test', 'merge'
+)
+
+function Assert-CommitTitlePrefix {
+    param([Parameter(Mandatory = $true)][string]$Title)
+    $pattern = '^\[(' + ($script:COMMIT_PREFIXES -join '|') + ')\]\s+.+'
+    if ($Title -notmatch $pattern) {
+        $allowed = $script:COMMIT_PREFIXES | ForEach-Object { "[$_]" }
+        throw "commit title 格式错误：必须以允许的前缀开头，例如 [feat] 新增功能。`n允许的前缀：$($allowed -join '、')`n收到：$Title"
+    }
+}
+
 function Test-ProtectedBranch {
     param([Parameter(Mandatory = $true)][string]$Branch)
     return ($Branch -in @('main', 'master', 'dev', 'uat', 'prod', 'production', 'staging')) -or $Branch.StartsWith('release/') -or $Branch.StartsWith('hotfix/')

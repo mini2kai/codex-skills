@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -16,6 +17,14 @@ from pathlib import Path
 
 PROTECTED_BRANCHES = {'main', 'master', 'dev', 'uat', 'prod', 'production', 'staging'}
 PROTECTED_PREFIXES = ('release/', 'hotfix/')
+
+COMMIT_PREFIXES = [
+    'feat', 'fix', 'refactor', 'perf', 'style', 'config',
+    'export', 'docs', 'chore', 'sql', 'hotfix', 'test', 'merge',
+]
+COMMIT_TITLE_PATTERN = re.compile(
+    r'^\[(' + '|'.join(COMMIT_PREFIXES) + r')\]\s+.+'
+)
 
 FORBIDDEN_STAGE_PATHS = {'.', '*', ':/', '--all', '-A', '-u'}
 
@@ -27,6 +36,10 @@ def is_protected_branch(branch: str) -> bool:
         if branch.startswith(prefix):
             return True
     return False
+
+
+def is_valid_commit_title(title: str) -> bool:
+    return COMMIT_TITLE_PATTERN.match(title) is not None
 
 
 def is_forbidden_stage_path(path: str) -> bool:
@@ -114,6 +127,45 @@ def test_commit_protection():
     return failures
 
 
+def test_commit_title_prefix():
+    """commit_cn.ps1 的逻辑：title 必须匹配 [prefix] 描述 格式。"""
+    failures = []
+    valid_titles = [
+        '[feat] 新增导出字段',
+        '[fix] 修复空指针异常',
+        '[refactor] 重构查询模块',
+        '[perf] 优化批量查询性能',
+        '[style] 统一代码缩进',
+        '[config] 新增页面配置 SQL',
+        '[export] 导出模板增加列',
+        '[docs] 更新 DESIGN.md',
+        '[chore] 清理临时文件',
+        '[sql] 新增索引',
+        '[hotfix] 紧急修复线上登录失败',
+        '[test] 补充单元测试',
+        '[merge] 同步 dev 分支',
+        '[feat] add new feature',
+    ]
+    invalid_titles = [
+        '新增功能',
+        'feat: 新增功能',
+        'feat 新增功能',
+        '[unknown] 未知前缀',
+        '[FEAT] 大写不行',
+        '[] 空前缀',
+        '[feat]没有空格',
+        '[feat]',
+        '',
+    ]
+    for title in valid_titles:
+        if not is_valid_commit_title(title):
+            failures.append(f"FAIL (should be valid title): {title!r}")
+    for title in invalid_titles:
+        if is_valid_commit_title(title):
+            failures.append(f"FAIL (should be invalid title): {title!r}")
+    return failures
+
+
 def test_create_branch_failure_blocks_native_fallback():
     """create_branch.ps1 失败时必须明确禁止原生 Git 兜底。"""
     failures = []
@@ -155,6 +207,7 @@ def main():
         ("stage_paths", test_stage_paths),
         ("push_protection", test_push_protection),
         ("commit_protection", test_commit_protection),
+        ("commit_title_prefix", test_commit_title_prefix),
         ("create_branch_failure_blocks_native_fallback", test_create_branch_failure_blocks_native_fallback),
         ("git_common_uses_strict_safe_capture", test_git_common_uses_strict_safe_capture),
     ]

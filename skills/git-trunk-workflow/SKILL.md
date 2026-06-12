@@ -13,6 +13,7 @@ description: Safe Git operations with protected-branch enforcement, explicit sta
 - **只 push 非保护分支**：`push_branch.ps1` 检查当前分支不是保护分支，否则直接拒绝。
 - **禁止 force push**：脚本只执行 `git push -u`，不带 `--force`。
 - **保护分支上禁止 commit**：`commit_cn.ps1` 提交前检查当前分支不是保护分支。
+- **commit title 前缀强制**：`Assert-CommitTitlePrefix` 校验 title 必须以 `[feat]`、`[fix]`、`[refactor]`、`[perf]`、`[style]`、`[config]`、`[export]`、`[docs]`、`[chore]`、`[sql]`、`[hotfix]`、`[test]`、`[merge]` 之一开头，后跟空格和描述文字，否则拒绝提交。
 - **禁止全量暂存**：`stage_paths.ps1` 拒绝 `.`、`*`、`--all`、`-A`、`-u`、通配符。
 - **暂存前校验文件存在性**：路径不在 git status 中则拒绝，防止空暂存。
 - **Git 中间状态检测**：`Assert-NoGitOperationInProgress` 检测 rebase/merge/cherry-pick 中间状态，有则拒绝执行。

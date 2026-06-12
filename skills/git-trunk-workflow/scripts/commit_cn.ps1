@@ -10,6 +10,7 @@ try {
     $repoRoot = Get-RepoRoot
     $branch = Get-CurrentBranch
     Assert-NotProtectedBranch -Branch $branch -Action 'commit'
+    Assert-CommitTitlePrefix -Title $Title
     $status = Split-Status
     if ($status.staged.Count -eq 0) {
         throw '暂存区为空，拒绝 commit。请先显式暂存本次任务相关文件。'
