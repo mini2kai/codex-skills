@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,332 +7,368 @@
   <meta name="description" content="Reusable, auditable AI Agent skills with code-enforced safety boundaries.">
   <style>
     :root {
-      color-scheme: light;
       --bg: #f7f8fb;
       --panel: #ffffff;
       --ink: #16202a;
       --muted: #607080;
       --line: #dfe5eb;
-      --blue: #1769e0;
+      --accent: #1769e0;
+      --accent-hover: #1254b8;
       --green: #16845f;
-      --gold: #a56a00;
-      --red: #b43b47;
-      --shadow: 0 18px 50px rgba(25, 38, 52, 0.12);
+      --shadow: 0 8px 32px rgba(25,38,52,0.08);
+      --radius: 10px;
     }
 
-    * { box-sizing: border-box; }
+    [data-theme="dark"] {
+      --bg: #0f1419;
+      --panel: #1a2330;
+      --ink: #e8edf3;
+      --muted: #8a9bb0;
+      --line: #2a3a4a;
+      --accent: #4d9cf7;
+      --accent-hover: #6fb3ff;
+      --green: #3dbd7d;
+      --shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; }
 
     body {
-      margin: 0;
       min-height: 100vh;
       background: var(--bg);
       color: var(--ink);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.55;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      transition: background 0.3s, color 0.3s;
     }
 
     .page {
-      width: min(1120px, calc(100% - 32px));
+      width: min(960px, calc(100% - 32px));
       margin: 0 auto;
+      padding: 24px 0 48px;
     }
 
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
-      padding: 24px 0 16px;
+      gap: 16px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--line);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       font-weight: 800;
-      letter-spacing: 0;
+      font-size: 18px;
     }
 
     .mark {
       display: grid;
       place-items: center;
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
       border-radius: 8px;
-      background: #16202a;
-      color: #ffffff;
-      font-size: 18px;
-      box-shadow: var(--shadow);
+      background: var(--ink);
+      color: var(--bg);
+      font-size: 16px;
+      font-weight: 900;
     }
 
-    nav {
+    .controls {
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
     }
 
-    nav a,
-    .button {
+    .btn-icon {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .hero {
+      padding: 56px 0 48px;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    h1 {
+      margin: 24px auto 16px;
+      max-width: 700px;
+      font-size: clamp(32px, 6vw, 56px);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .lead {
+      max-width: 580px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 40px;
-      padding: 0 14px;
+      height: 42px;
+      padding: 0 20px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--panel);
       color: var(--ink);
       font-size: 14px;
       font-weight: 700;
+      text-decoration: none;
+      transition: background 0.2s, border-color 0.2s;
     }
 
-    .button.primary {
-      border-color: var(--blue);
-      background: var(--blue);
-      color: #ffffff;
+    .btn:hover { border-color: var(--accent); }
+
+    .btn.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
     }
 
-    main { padding: 20px 0 56px; }
+    .btn.primary:hover { background: var(--accent-hover); }
 
-    .intro {
+    .skills-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(320px, 430px);
-      gap: 28px;
-      align-items: center;
-      min-height: 520px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+      margin-top: 48px;
     }
 
-    .eyebrow {
-      display: inline-flex;
-      width: fit-content;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 10px;
+    .skill-card {
+      padding: 20px;
       border: 1px solid var(--line);
-      border-radius: 999px;
-      background: #ffffff;
-      color: var(--green);
-      font-size: 13px;
-      font-weight: 800;
+      border-radius: var(--radius);
+      background: var(--panel);
+      transition: box-shadow 0.2s, border-color 0.2s;
     }
 
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--green);
-    }
-
-    h1 {
-      margin: 22px 0 16px;
-      max-width: 760px;
-      font-size: clamp(42px, 8vw, 82px);
-      line-height: 0.96;
-      letter-spacing: 0;
-    }
-
-    .lead {
-      max-width: 640px;
-      margin: 0;
-      color: var(--muted);
-      font-size: 19px;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 28px;
-    }
-
-    .terminal {
-      overflow: hidden;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #101820;
-      color: #dfe9f4;
+    .skill-card:hover {
+      border-color: var(--accent);
       box-shadow: var(--shadow);
     }
 
-    .terminal-bar {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      height: 38px;
-      padding: 0 14px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-      background: #17222d;
-    }
-
-    .light {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #8ea0b2;
-    }
-
-    .light:nth-child(1) { background: #dc6c6c; }
-    .light:nth-child(2) { background: #e1b64a; }
-    .light:nth-child(3) { background: #53b779; }
-
-    .terminal-body {
-      padding: 22px;
-      font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
-      font-size: 13px;
-    }
-
-    .line {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin: 0 0 12px;
-    }
-
-    .prompt {
-      color: #67d391;
-      flex: 0 0 auto;
-    }
-
-    .cmd {
-      color: #f4f7fb;
-      overflow-wrap: anywhere;
-    }
-
-    .output { color: #aebdca; }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 22px;
-    }
-
-    .tile {
-      min-height: 128px;
-      padding: 18px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel);
-    }
-
-    .tile strong {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 16px;
-    }
-
-    .tile span {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .stripe {
-      height: 4px;
-      margin: -18px -18px 16px;
-      border-radius: 8px 8px 0 0;
-      background: var(--blue);
-    }
-
-    .tile:nth-child(2) .stripe { background: var(--green); }
-    .tile:nth-child(3) .stripe { background: var(--gold); }
-    .tile:nth-child(4) .stripe { background: var(--red); }
-
-    .section-title {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 16px;
-      margin-top: 48px;
-      padding-top: 28px;
-      border-top: 1px solid var(--line);
-    }
-
-    h2 {
-      margin: 0;
-      font-size: 28px;
-      letter-spacing: 0;
-    }
-
-    .section-title p {
-      max-width: 520px;
-      margin: 0;
-      color: var(--muted);
+    .skill-name {
       font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .skill-desc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .skill-tag {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
     }
 
     footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
       display: flex;
       justify-content: space-between;
-      gap: 16px;
-      padding: 28px 0 42px;
-      border-top: 1px solid var(--line);
+      align-items: center;
       color: var(--muted);
-      font-size: 14px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
-    @media (max-width: 860px) {
-      header,
-      footer,
-      .section-title {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      nav { justify-content: flex-start; }
-
-      .intro {
-        grid-template-columns: 1fr;
-        min-height: auto;
-        padding-top: 26px;
-      }
-
-      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
     }
 
     @media (max-width: 560px) {
-      .page { width: min(100% - 24px, 1120px); }
-      h1 { font-size: 44px; }
-      .lead { font-size: 17px; }
-      .grid { grid-template-columns: 1fr; }
-      nav a,
-      .button { width: 100%; }
-      nav,
-      .actions { width: 100%; }
+      .hero { padding: 36px 0 32px; }
+      h1 { font-size: 32px; }
+      .lead { font-size: 15px; }
+      .skills-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <div class="page">
     <header>
-      <a class="brand" href="./" aria-label="M2K Skills home">
+      <div class="brand">
         <span class="mark">M</span>
         <span>M2K Skills</span>
-      </a>
-      <nav aria-label="Main navigation">
-        <a href="./README.md">Docs</a>
-        <a href="./README_cn.md">Chinese</a>
-        <a href="https://github.com/mini2kai/m2k-skills">GitHub</a>
-      </nav>
+      </div>
+      <div class="controls">
+        <button class="btn-icon" id="lang-toggle" title="Switch language" aria-label="Switch language">En</button>
+        <button class="btn-icon" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
     </header>
 
     <main>
-      <section class="intro" aria-labelledby="page-title">
-        <div>
-          <div class="eyebrow"><span class="dot"></span>Cloudflare Pages is live</div>
-          <h1 id="page-title">Reusable AI Agent skills with real safety fences.</h1>
-          <p class="lead">M2K Skills is a practical toolbox for Codex-style agents: PostgreSQL inspection, server log reading, Git delivery, Feishu workflows, web demo publishing, and more.</p>
-          <div class="actions">
-            <a class="button primary" href="./README.md">Read the guide</a>
-            <a class="button" href="./INSTALLATION.md">Install skills</a>
-          </div>
+      <section class="hero">
+        <div class="badge"><span class="badge-dot"></span><span data-i18n="badge">Open Source</span></div>
+        <h1 data-i18n="title">Reusable AI Agent Skills with Real Safety Fences</h1>
+        <p class="lead" data-i18n="lead">Code-enforced boundaries for PostgreSQL, Git, server logs, Feishu, web publishing, and orchestration. Scripts block dangerous operations — prompts can't override.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="https://github.com/mini2kai/m2k-skills" data-i18n="cta_github">GitHub</a>
+          <a class="btn" href="https://pypi.org/project/m2k-skills-tools/" data-i18n="cta_pypi">PyPI</a>
         </div>
+      </section>
 
-        <aside class="terminal" aria-label="Quick start preview">
-          <div class="terminal-bar"><span class="light"></span><span class="light"></span><span class="light"></span></div>
-          <div class="terminal-body">
+      <section class="skills-grid" id="skills-grid"></section>
+    </main>
+
+    <footer>
+      <span data-i18n="footer_copy">M2K Skills &mdash; mini2kai</span>
+      <a href="https://github.com/mini2kai/m2k-skills">GitHub</a>
+    </footer>
+  </div>
+
+  <script>
+    const SKILLS = [
+      { name: 'git-trunk-workflow', en: 'Safe Git operations with protected-branch enforcement, explicit staging, Chinese commits, and audit trail.', zh: '安全 Git 执行层：保护分支拦截、显式暂存、中文 commit、审计留痕。' },
+      { name: 'postgres-query', en: 'Read-only PostgreSQL/Greenplum queries with SQL whitelist, row caps, credential redaction, and audit.', zh: 'PostgreSQL/Greenplum 只读查询：SQL 白名单、行数上限、凭据脱敏、审计。' },
+      { name: 'server-docker-logs-readonly', en: 'Script-whitelist-only server log reading. No direct ssh/docker allowed.', zh: '脚本白名单服务器日志只读查询，不允许直接 ssh/docker。' },
+      { name: 'work-orchestrator', en: 'Manual-trigger orchestration: analyze first, then authorize implementation with evidence-based workflow.', zh: '手动触发总控编排：先分析后实施，证据驱动的全链路工作流。' },
+      { name: 'lark-cli-config', en: 'Feishu/Lark document operations: auth, fetch, create, update with risk confirmation.', zh: '飞书文档操作：授权、读取、创建、覆盖更新，高风险需确认。' },
+      { name: 'web-demo-publisher', en: 'Generate, preview, and publish web demos with localhost:9999 and optional cpolar public URLs.', zh: '生成、预览、发布 Web 演示，localhost:9999 + 可选 cpolar 外网。' },
+      { name: 'ai-worklog', en: 'Cross-machine AI collaboration statistics and daily work report generation.', zh: '跨机器 AI 协作记录统计，生成工作日报和报工摘要。' },
+      { name: 'skill-dev', en: 'Skill development standards: fence model, testing, versioning, GitHub/PyPI publishing.', zh: 'Skill 开发规范：围栏模型、测试、版本管理、GitHub/PyPI 发布。' },
+    ];
+
+    const I18N = {
+      en: {
+        badge: 'Open Source',
+        title: 'Reusable AI Agent Skills with Real Safety Fences',
+        lead: 'Code-enforced boundaries for PostgreSQL, Git, server logs, Feishu, web publishing, and orchestration. Scripts block dangerous operations — prompts can\'t override.',
+        cta_github: 'GitHub',
+        cta_pypi: 'PyPI',
+        footer_copy: 'M2K Skills — mini2kai',
+        tag: 'fence-model',
+      },
+      zh: {
+        badge: '开源',
+        title: '可复用的 AI Agent Skills，代码级安全围栏',
+        lead: '代码强制的安全边界，覆盖 PostgreSQL、Git、服务器日志、飞书、Web 发布和编排。脚本拦截危险操作，提示词无法绕过。',
+        cta_github: 'GitHub',
+        cta_pypi: 'PyPI',
+        footer_copy: 'M2K Skills — mini2kai',
+        tag: '围栏模型',
+      }
+    };
+
+    let lang = localStorage.getItem('m2k-lang') || (navigator.language.startsWith('zh') ? 'zh' : 'en');
+    let theme = localStorage.getItem('m2k-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+    function applyTheme() {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('m2k-theme', theme);
+      const svg = theme === 'dark'
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+      document.getElementById('theme-toggle').innerHTML = svg;
+    }
+
+    function applyLang() {
+      localStorage.setItem('m2k-lang', lang);
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      document.getElementById('lang-toggle').textContent = lang === 'zh' ? '中' : 'En';
+      const t = I18N[lang];
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key]) el.textContent = t[key];
+      });
+      renderSkills();
+    }
+
+    function renderSkills() {
+      const grid = document.getElementById('skills-grid');
+      const tag = I18N[lang].tag;
+      grid.innerHTML = SKILLS.map(s => `
+        <div class="skill-card">
+          <div class="skill-name">${s.name}</div>
+          <div class="skill-desc">${lang === 'zh' ? s.zh : s.en}</div>
+          <span class="skill-tag">${tag}</span>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      theme = theme === 'light' ? 'dark' : 'light';
+      applyTheme();
+    });
+
+    document.getElementById('lang-toggle').addEventListener('click', () => {
+      lang = lang === 'en' ? 'zh' : 'en';
+      applyLang();
+    });
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      if (!localStorage.getItem('m2k-theme')) {
+        theme = e.matches ? 'dark' : 'light';
+        applyTheme();
+      }
+    });
+
+    applyTheme();
+    applyLang();
+  </script>
+</body>
+</html>
