@@ -52,6 +52,22 @@ python scripts/validate_skill_repo.py --repo-root <path> --skill <name>
 - skill 格式：`references/skill_format.md`
 - 仓库约定：`references/repository_conventions.md`
 
+## /note 快捷记录
+
+使用任何 skill 过程中遇到问题、摩擦点或待改进想法时，随时说：
+
+```
+/note <内容>
+```
+
+Claude 立即追加一条到 `references/improvement-backlog.md` 的"待处理"区，格式：
+
+```
+- [skill名/日期] 描述
+```
+
+不需要确认，写完告知即可。定期把"待处理"整理为 incident 或围栏需求后移入"已处理"。
+
 ## 安全底线
 
 - 不写入密钥、token、cookie、数据库凭据
